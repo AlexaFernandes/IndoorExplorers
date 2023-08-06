@@ -1,5 +1,6 @@
 import numpy as np
 
+from indoor_explorers.utils.printMaps import printMap
 from indoor_explorers.utils.randomMapGenerator import Generator
 from indoor_explorers.utils.lidarSensor import Lidar
 from indoor_explorers.render.viewer import Viewer
@@ -111,13 +112,13 @@ class ExplorerConf(gym.Env):
 
     def _choice(self, choice):
 
-        if choice == 0:
+        if choice == 0: #RIGHT
             self._move(x=1, y=0)
-        elif choice == 1:
+        elif choice == 1: #LEFT
             self._move(x=-1, y=0)
-        elif choice == 2:
+        elif choice == 2: #UP
             self._move(x=0, y=1)
-        elif choice == 3:
+        elif choice == 3: #DOWN
             self._move(x=0, y=-1)
 
 
@@ -204,14 +205,17 @@ class ExplorerConf(gym.Env):
         self.reward_trajectory.append(self.reward)
         self.drone_trajectory.append([self.x, self.y])
 
+    def printMaps(self):
+        printMap(self.pastExploredMap)
 
     def step(self, action):
-
         self.action = action
         self._applyRLactions(action)
         self._computeReward()
         self._checkDone()
         self._updateTrajectory()
+        #imprimir os mapas numa janela à parte -> GroundTruthMap e exploredMap
+        self.printMaps()
 
         info = {}
         return self.new_state, self.reward, self.done, info

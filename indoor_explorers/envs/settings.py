@@ -41,7 +41,7 @@ DEFAULT_CONFIG={
               "light_mask":"/home/thedarkcurls/IndoorExplorers/img/light_350_hard.png",
               "night_color":(20, 20, 20),
               "draw_lidar":True,
-              "draw_grid":False,
+              "draw_grid":True,
               "draw_traceline":False
              }
 }

@@ -3,7 +3,7 @@ from setuptools import setup
 setup(
     name='indoor_explorers',
     version='0.0.1',
-    keywords='exploration, robotics, environment, agent, rl, openaigym, openai-gym, gym',
+    keywords='exploration, robotics, environment, multi-agent, rl, openaigym, openai-gym, gym',
     description='Exploration of unknown indoor areas using lidar',
     install_requires=[
         'gym>=0.9.6',
