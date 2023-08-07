@@ -14,6 +14,7 @@ N_GAMES = 30
 N_STEPS = 3000
 DELAY = 0.
 RENDER_ACTIVE = False
+RENDER_GRID = False
 CONF_PATH = "/home/thedarkcurls/IndoorExplorers/non-learning/params.json"
 
 
@@ -105,7 +106,7 @@ def play_game(env):
 
         action = get_action(obs)
 
-        obs, reward, done, info = env.step(action)
+        obs, reward, done, info = env.step(action,RENDER_GRID)
 
         exploration_rate.append(np.count_nonzero(obs)/(obs.shape[0]*obs.shape[1]))
 

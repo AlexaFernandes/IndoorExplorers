@@ -208,14 +208,15 @@ class ExplorerConf(gym.Env):
     def printMaps(self):
         printMap(self.pastExploredMap)
 
-    def step(self, action):
+    def step(self, action, print):
         self.action = action
         self._applyRLactions(action)
         self._computeReward()
         self._checkDone()
         self._updateTrajectory()
         #imprimir os mapas numa janela à parte -> GroundTruthMap e exploredMap
-        self.printMaps()
+        if print:
+            self.printMaps()
 
         info = {}
         return self.new_state, self.reward, self.done, info
