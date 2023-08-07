@@ -7,8 +7,8 @@ from matplotlib.colors import ListedColormap
 def printMap(matrix):
 
     #define discrete colors for the colormap
-    cmap1 = ListedColormap(["lightgrey", "white", "red", "darkblue"],"custom_cmap")
-    cmap2 = ListedColormap(["lightgrey", "white", "red"],"custom_cmap")
+    cmap1 = ListedColormap(["lightgrey", "white", "red", "darkblue"],"all_camp")
+    cmap2 = ListedColormap(["lightgrey", "white", "red"],"no_obstacles_cmap")
     lst = [0.0, 0.3, 0.6, 1.0]
     flag=False
 
