@@ -116,9 +116,9 @@ class ExplorerConf(gym.Env):
             self._move(x=1, y=0)
         elif choice == 1: #LEFT
             self._move(x=-1, y=0)
-        elif choice == 2: #UP
+        elif choice == 2: #DOWN -> acho que como é uma janela o eixo y aponta para baixo
             self._move(x=0, y=1)
-        elif choice == 3: #DOWN
+        elif choice == 3: #UP
             self._move(x=0, y=-1)
 
 

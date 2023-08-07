@@ -10,31 +10,23 @@ def printMap(matrix):
     cmap1 = ListedColormap(["lightgrey", "white", "red", "darkblue"],"all_camp")
     cmap2 = ListedColormap(["lightgrey", "white", "red"],"no_obstacles_cmap")
     lst = [0.0, 0.3, 0.6, 1.0]
-    flag=False
-
-    # minima = min(lst)
-    # maxima = max(lst)
-
-    # norm = mpl.colors.Normalize(vmin=minima, vmax=maxima, clip=True)
-    # mapper = mpl.cm.ScalarMappable(norm=norm, cmap=cmap)
-    # for v in sorted(lst):
-    #     print("%.4f: %.4f" % (v, mapper.to_rgba(v)[0]) )
         
 
     fig, ax= plt.subplots()
     fig.tight_layout()
+    #adding grid lines
+    plt.hlines(y=np.arange(0, matrix.shape[1])+0.5, xmin=np.full(matrix.shape[1], 0)-0.5, xmax=np.full(matrix.shape[1], matrix.shape[1])-0.5, color="grey")
+    plt.vlines(x=np.arange(0, matrix.shape[0])+0.5, ymin=np.full(matrix.shape[0], 0)-0.5, ymax=np.full(matrix.shape[0], matrix.shape[0])-0.5, color="grey")
 
     #print numbers inside squares
-    for i in range(matrix.shape[1]): #collumns
-        for j in range(matrix.shape[0]): #rows
-            c = matrix[j,i]
-            if c == 1.0:
-                flag=True
-            ax.text(i, j, str("%.1f"%c), va='center', ha='center')
+    # for i in range(matrix.shape[1]): #collumns
+    #     for j in range(matrix.shape[0]): #rows
+    #         c = matrix[j,i]
+    #         ax.text(i, j, str("%.1f"%c), va='center', ha='center')
 
     ax.set_title("Ground Truth Map") #set title name
     
-    if flag:
+    if 1.0 in matrix: #if an obstacle as been found the colormap should include the color blue and the colorbar should be accordingly
         pos=ax.imshow(matrix,cmap=cmap1) #outra alternativa é o matshow, mas assim o titulo nao aparece
 
         cbar = plt.colorbar(pos) #make colorbar from the ploted imshow

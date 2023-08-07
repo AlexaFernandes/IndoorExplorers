@@ -34,7 +34,7 @@ DEFAULT_CONFIG={
     # ======== VIEWER =========
     "viewer":{"width":21*30,
               "height":21*30,
-              "title":"Mars-Explorer-V01",
+              "title":"Indoor-Explorers-V01",
               "drone_img":'/home/thedarkcurls/IndoorExplorers/img/drone.png',
               "obstacle_img":'/home/thedarkcurls/IndoorExplorers/img/stone_black2.png',
               "background_img":'/home/thedarkcurls/IndoorExplorers/img/wood_floor.jpg',
