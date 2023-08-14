@@ -1,0 +1,28 @@
+#fazer com base no exemplo main do DDDQN repo
+
+from learning.dddqn import DDDQNAgent
+#from utils import install_roms_in_folder
+
+GAMES = ['SpaceInvaders-Nes', 'Joust-Nes', 'SuperMarioBros-Nes', 'MsPacMan-Nes']
+# COMBOS = [ [['LEFT'], ['RIGHT'], ['A'], ['LEFT', 'A'], ['RIGHT', 'A']],
+#            [['LEFT'], ['RIGHT'], ['UP'], ['DOWN']] ]
+MOVES = [0,1,2,3] #RIGHT, LEFT, DOWN, UP 
+
+if __name__ == '__main__':
+
+    #install roms
+    #install_roms_in_folder('roms/')
+
+    #create agent
+    dddqn = DDDQNAgent(GAMES[2], MOVES, epsilon_decay=0.99999, batch_size=32)#(GAMES[2], COMBOS[0], epsilon_decay=0.99999, batch_size=32)
+    dddqn.q_eval.summary()
+    dddqn.q_target.summary()
+    
+    #train agent
+    dddqn.run(num_episodes=5, checkpoint=True, cp_interval=100, cp_render=True)
+    
+    #load model
+    dddqn.load('models', 'DDDQN_test_IndoorExplorers_QEval.h5', 'DDDQN_test_IndoorExplorers_QTarget.h5')
+    
+    #play game
+    dddqn.play_episode(render=True, render_and_save=True, otype='GIF')

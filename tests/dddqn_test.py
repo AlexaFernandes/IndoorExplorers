@@ -4,9 +4,9 @@ import math
 import time
 import argparse
 from indoor_explorers.envs.settings import DEFAULT_CONFIG as conf
+from learning.dddqn import *
 
 RENDER_GRID = True
-
 def get_conf():
     conf["size"] = [30, 30]
     conf["obstacles"] = 20

@@ -50,12 +50,6 @@ class Explorer(gym.Env):
         randomMap[randomMap == 0.0] = 0.3
         self.groundTruthMap = randomMap
 
-        np.set_printoptions(formatter={'float': '{: 0.3f}'.format})
-        print("original:")
-        print(randomMapOriginal)
-        print("random:")
-        print(randomMap)
-
         # for lidar --> 0 free cell
         #               1 obstacle
         self.ldr = Lidar(r=self.conf["lidar_range"],

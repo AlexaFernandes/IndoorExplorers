@@ -20,8 +20,8 @@ conf["obstacles"] = 4
 conf["obstacle_size"] = [1,1]
 conf["lidar_range"] = 6
 
-conf["viewer"]["width"] = size[0]*30
-conf["viewer"]["height"] = size[1]*30
+conf["viewer"]["width"] = size[0]*10
+conf["viewer"]["height"] = size[1]*10
 conf["viewer"]["night_color"] = (0,0,0)
 conf["viewer"]["draw_lidar"] = True
 
@@ -35,8 +35,8 @@ def saveRend(rend):
 def plotHeatMap(img):
     fig, ax = plt.subplots(1,1)
     h = sns.heatmap(img[:,:,0],
-                    annot=True,
-                    linewidths=.5)
+                    annot=False,
+                    linewidths=.2)
 
     h.set(yticks=[])
     h.set(xticks=[])
