@@ -208,7 +208,7 @@ class ExplorerConf(gym.Env):
     def printMaps(self):
         printMap(self.pastExploredMap)
 
-    def step(self, action, print):
+    def step(self, action, print=True):
         self.action = action
         self._applyRLactions(action)
         self._computeReward()
