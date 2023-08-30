@@ -1,7 +1,13 @@
 DEFAULT_CONFIG={
     # ======== TOPOLOGY =======
+    #  number of agents
+    "n_agents": 4,
     #  general configuration for the topology of operational area
-    "initial":[0,0],
+    "initial": {0: [0,0],
+                1: [0,20],
+                2 :[20,0],
+                3: [20,20]
+                },
     "size":[21,21],
     #  configuration regarding the movements of uav
     "movementCost":0.2,

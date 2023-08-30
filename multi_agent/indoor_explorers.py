@@ -10,7 +10,7 @@ from gym.utils import seeding
 import ma_gym.envs.indoor_explorers.core
 from ma_gym.envs.indoor_explorers.utils.printMaps import printMap
 from ma_gym.envs.indoor_explorers.utils.randomMapGenerator import Generator
-from ma_gym.envs.indoor_explorers.utils.lidarSensor import Lidar
+from ma_gym.envs.indoor_explorers.utils.multi_agent_lidarSensor import Lidar
 
 from ma_gym.envs.utils.action_space import MultiAgentActionSpace
 from ma_gym.envs.utils.observation_space import MultiAgentObservationSpace
@@ -18,24 +18,25 @@ from ma_gym.envs.utils.draw import draw_grid, fill_cell, draw_circle, write_cell
 
 logger = logging.getLogger(__name__)
 
+RANDOM_SPAWN=False #TODO colocar no ficheiro depois
 
 class IndoorExplorers(gym.Env):
     metadata = {'render.modes': ['human', 'rgb_array']}
 
-    def __init__(self, grid_shape=(21, 21), n_agents=4,
-                 full_observable=False, penalty=-0.5, step_cost=-0.01, prey_capture_reward=5, #max_steps=100,
-                 agent_view_mask=(5, 5), conf = None):
+    def __init__(self, conf=None, grid_shape=(21, 21),# n_agents=4,
+                 full_observable=False, penalty=-0.5, step_cost=-0.01, prey_capture_reward=5 ): #, max_steps=100,
+                 #agent_view_mask=(5, 5)):
         assert len(grid_shape) == 2, 'expected a tuple of size 2 for grid_shape, but found {}'.format(grid_shape)
-        assert len(agent_view_mask) == 2, 'expected a tuple of size 2 for agent view mask,' \
-                                          ' but found {}'.format(agent_view_mask)
+        # assert len(agent_view_mask) == 2, 'expected a tuple of size 2 for agent view mask,' \
+        #                                   ' but found {}'.format(agent_view_mask)
         assert grid_shape[0] > 0 and grid_shape[1] > 0, 'grid shape should be > 0'
-        assert 0 < agent_view_mask[0] <= grid_shape[0], 'agent view mask has to be within (0,{}]'.format(grid_shape[0])
-        assert 0 < agent_view_mask[1] <= grid_shape[1], 'agent view mask has to be within (0,{}]'.format(grid_shape[1])
+        # assert 0 < agent_view_mask[0] <= grid_shape[0], 'agent view mask has to be within (0,{}]'.format(grid_shape[0])
+        # assert 0 < agent_view_mask[1] <= grid_shape[1], 'agent view mask has to be within (0,{}]'.format(grid_shape[1])
 
         self._grid_shape = grid_shape #tem os mesmos valores que conf["size"]
-        self.n_agents = n_agents #TODO depois passar para o ficheiro
-        self.world = make_world(grid_shape, n_agents)
-        self.agents = self.world.get_agents 
+        self.n_agents = conf["n_agents"] 
+        #self.world = make_world(grid_shape, n_agents) #TODO alterar isto, pq o codigo que estou a fazer, faz isto tudo no reset!
+        self.agents = self.create_agents(self.n_agents) #TODO alterar isto tmb
         self._max_steps = conf["max_steps"]
         self._step_count = None
         self._steps_beyond_done = None
@@ -47,7 +48,7 @@ class IndoorExplorers(gym.Env):
         self.action_space = MultiAgentActionSpace([spaces.Discrete(5) for _ in range(self.n_agents)]) #por agora vou deixar 5 ações (L R U D NOOP) TODO: add share info
         self.agent_pos = {_: None for _ in range(self.n_agents)}
         
-        self.agent_explored_map = [None for _ in range(self.n_agents)]
+        self.exploredMaps = [None for _ in range(self.n_agents)] #explored map of every agent
         self.lidar_map = None # with no agents, just the walls -> 0.0 -> unexplored , 0.5 walls
         self.groundTruthMap = None #map fully explored aka the ground truth to be compared  to -> 0.3 explored , 0.5 walls
         self._full_obs = self.__create_grid()
@@ -85,8 +86,9 @@ class IndoorExplorers(gym.Env):
         return self.is_valid(pos) and (self._full_obs[pos[0]][pos[1]] == PRE_IDS['empty'])
 
     #check is there is any other agents nearby
-    #TODO
-    #returns list or something with id and pos of each agent
+    #def look_for_other_agents(self, pos): #pos or better agent?
+        #TODO
+        #returns list or something with id and pos of each agent
 
     def is_collision(self, agent1, agent2):
         #TODO reescrever
@@ -97,11 +99,12 @@ class IndoorExplorers(gym.Env):
 
     #função que atualiza a info de cada agente 
     def __update_agent_view(self, agent_i):
-        #adicionar dinâmica do lidar
-        #TODO
 
-        #update its own explored map??
-        #TODO
+        # initialing position is explored
+        self._activateLidars()
+
+        #update its own explored map
+        self._updateMaps()
 
         #update de ground_truth_map 
         self._full_obs[self.agent_pos[agent_i][0]][self.agent_pos[agent_i][1]] = PRE_IDS['agent'] + str(agent_i + 1)
@@ -123,41 +126,43 @@ class IndoorExplorers(gym.Env):
         self.groundTruthMap = randomMap.copy() #save the ground truth, fully explored
         return randomMap
 
-    #TODO
+    #CONFIRM!!
     def create_lidars(self):
         # for lidar --> 0 free cell
         #               1 obstacle
         #create an array of lidar, one per agent
         self.ldr = [Lidar(r=self.conf["lidar_range"],
                          channels=self.conf["lidar_channels"],
-                         map=randomMapOriginal)                     for _ in range(self.n_agents)]
+                         map=self.lidar_map)                     for _ in range(self.n_agents)]
         
-
-        obstacles_idx = np.where(self._full_obs == 1.0)
+        #create list of obstacle indexes
+        obstacles_idx = np.where(self.groundTruthMap == 1.0)
         obstacles_x = obstacles_idx[0]
         obstacles_y = obstacles_idx[1]
         self.obstacles_idx = np.stack((obstacles_x, obstacles_y), axis=1)
         self.obstacles_idx = [list(i) for i in self.obstacles_idx]
 
-    #TODO
+    #CONFIRM!!
     def _updateMaps(self):
 
-        self.pastExploredMap = self.exploredMap.copy()
+        for agent_i in self.agents:
+            self.pastExploredMaps[agent_i] = self.exploredMaps[agent_i].copy()
 
-        lidarX = self.lidarIndexes[:,0]
-        lidarY = self.lidarIndexes[:,1]
-        self.exploredMap[lidarX, lidarY] = self.groundTruthMap[lidarX, lidarY]
+            lidarX= self.lidarsIndexes[agent_i][:,0]
+            lidarY = self.lidarsIndexes[agent_i][:,1]
+            self.exploredMaps[agent_i][lidarX, lidarY] = self.groundTruthMap[lidarX, lidarY]
 
-        self.exploredMap[self.x, self.y] = 0.6
+            self.exploredMaps[agent_i][self.agent_pos[agent_i][0],[self.agent_pos[agent_i][1]]] = agent_i
 
-    #TODO
-    def _activateLidar(self):
+    #CONFIRM!!
+    def _activateLidars(self):
 
-        self.ldr.update([self.x, self.y])
-        thetas, ranges = self.ldr.thetas, self.ldr.ranges
-        indexes = self.ldr.idx
+        for agent_i in self.agents: 
+            self.ldr[agent_i].update(self.agent_pos[agent_i]) #TODO CONFIRMAR!! alternativa: [self.agent_pos[agent_i][0],[self.agent_pos[agent_i][1]]]
+            thetas[agent_i], ranges[agent_i] = self.ldr[agent_i].thetas, self.ldr[agent_i].ranges
+            indexes[agent_i] = self.ldr[agent_i].idx
 
-        self.lidarIndexes = indexes
+        self.lidarsIndexes = indexes
 
 
     #TODO esta vai ser a função de inicialização do mapa e das posições de cada agente
@@ -165,19 +170,40 @@ class IndoorExplorers(gym.Env):
         #creates new map
         self._full_obs = self.__create_grid()
 
-        #initialize lidars
-        #TODO
-
-        #inserts agents at random locations #TODO mudar para que dê spawn nos cantos do mapa
+        # create an empty exploredMap for each agent and
+        # inserts agents at random locations #TODO mudar para que dê spawn nos cantos do mapa
         for agent_i in range(self.n_agents):
+            # 0 if not visible/visited, 1 if visible/visited
+            self.exploredMaps[agent_i] = np.zeros(self.SIZE, dtype=np.double)
+
+            if RANDOM_SPAWN: random_spawn=True
             while True:
-                pos = [self.np_random.randint(0, self._grid_shape[0] - 1),
+                if random_spawn:
+                    pos = [self.np_random.randint(0, self._grid_shape[0] - 1),
                         self.np_random.randint(0, self._grid_shape[1] - 1)]
+                else:
+                    pos = conf["initial"][agent_i]
+
                 if self._is_cell_vacant(pos):
                     self.agent_pos[agent_i] = pos
                     break
-            self.__update_agent_view(agent_i) 
+                else:
+                    #set flag to generate a new possible spawn position
+                    random_spawn=True
+            #reset spawn flag
+            random_spawn=RANDOM_SPAWN
+            
+            #TODO será melhor dar upadte individual??
+            #self.__update_agent_view(agent_i) 
+        
+        #OUU fazer assim:
+        # initialing position is explored
+        self._activateLidars()
 
+        #update everyone's explored maps
+        self._updateMaps()
+
+        #render??
         self.__draw_base_img()
 
     def __update_agent_pos(self, agent_i, move):
@@ -300,6 +326,48 @@ class IndoorExplorers(gym.Env):
         if self.viewer is not None:
             self.viewer.close()
             self.viewer = None
+
+    def create_agents(n_agents):
+        agents = [Agent() for i in range(num_agents)]
+        for i, agent in enumerate(agents):
+            agent.name = 'agent %d' % i
+            agent.id = i
+            # agent.collide = True
+            # agent.silent = True
+            #initialize other properties
+            agent.color = AGENT_COLORS[i]
+            
+        return agents
+
+
+class Agent(object):
+    def __init__(self):
+        super(Agent, self).__init__()
+        # name 
+        self.name = ''
+        self.id = None
+        #each agent has its own explored map
+        self.explored_map = []
+        # agents are movable by default
+        self.movable = True
+        # cannot send communication signals
+        self.silent = False
+        # cannot observe the world
+        self.blind = False
+        # physical motor noise amount
+        self.u_noise = None
+        # communication noise amount
+        self.c_noise = None
+        # control range
+        self.u_range = 1.0
+        # color
+        self.color = None
+        # state
+        self.state = AgentState() #simplificar? acho qu epode ser útil para saber se está a comunicar ou non
+        # action
+        self.action = None #vou simplificar e vai ser um nº inteiro #Action()
+        # script behavior to execute
+        self.action_callback = None #-> TODO pôr a policy/model aqui??? 
 
 
 AGENT_COLORS = [ImageColor.getcolor('blue', mode='RGB'),ImageColor.getcolor('red', mode='RGB'),ImageColor.getcolor('green', mode='RGB'),ImageColor.getcolor('yellow', mode='RGB')]

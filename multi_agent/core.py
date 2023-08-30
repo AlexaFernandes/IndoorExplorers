@@ -87,7 +87,7 @@ class Agent(object):
         # state
         self.state = AgentState()
         # action
-        self.action = Action()
+        self.action = None #vou simplificar #Action()
         # script behavior to execute
         self.action_callback = None #-> TODO pôr a policy/model aqui??? 
 
