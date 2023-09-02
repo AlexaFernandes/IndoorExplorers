@@ -7,10 +7,10 @@ from PIL import ImageColor
 from gym import spaces
 from gym.utils import seeding
 
-import ma_gym.envs.indoor_explorers.core
-from ma_gym.envs.indoor_explorers.utils.printMaps import printMap
-from ma_gym.envs.indoor_explorers.utils.randomMapGenerator import Generator
-from ma_gym.envs.indoor_explorers.utils.multi_agent_lidarSensor import Lidar
+import multi_agent.core
+from multi_agent.utils.printMaps import printMap
+from multi_agent.utils.randomMapGenerator import Generator
+from multi_agent.utils.multi_agent_lidarSensor import Lidar
 
 from ma_gym.envs.utils.action_space import MultiAgentActionSpace
 from ma_gym.envs.utils.observation_space import MultiAgentObservationSpace
@@ -35,8 +35,7 @@ class IndoorExplorers(gym.Env):
 
         self._grid_shape = grid_shape #tem os mesmos valores que conf["size"]
         self.n_agents = conf["n_agents"] 
-        #self.world = make_world(grid_shape, n_agents) #TODO alterar isto, pq o codigo que estou a fazer, faz isto tudo no reset!
-        self.agents = self.create_agents(self.n_agents) #TODO alterar isto tmb
+        self.agents = self.create_agents() #TODO verificar se é preciso inicializar mais alguma coisa nesta função
         self._max_steps = conf["max_steps"]
         self._step_count = None
         self._steps_beyond_done = None
@@ -46,17 +45,17 @@ class IndoorExplorers(gym.Env):
         self._agent_view_mask = agent_view_mask
 
         self.action_space = MultiAgentActionSpace([spaces.Discrete(5) for _ in range(self.n_agents)]) #por agora vou deixar 5 ações (L R U D NOOP) TODO: add share info
-        self.agent_pos = {_: None for _ in range(self.n_agents)}
-        
-        self.exploredMaps = [None for _ in range(self.n_agents)] #explored map of every agent
+        #self.agent_pos = {_: None for _ in range(self.n_agents)} 
+        #self.exploredMaps = [None for _ in range(self.n_agents)] #explored map of every agent
+        #self._agent_dones = [False for _ in range(self.n_agents)] #this is done when creating the agents
+
         self.lidar_map = None # with no agents, just the walls -> 0.0 -> unexplored , 0.5 walls
         self.groundTruthMap = None #map fully explored aka the ground truth to be compared  to -> 0.3 explored , 0.5 walls
-        self._full_obs = self.__create_grid()
-        self._agent_dones = [False for _ in range(self.n_agents)]
+        self._full_obs = self.__create_grid() #map wit overall view from every agent - the global map
+        
         self.viewer = None
         self.full_observable = full_observable
 
-        # TODO
         #observation space is the view of the map
         # 0.0 --> unexplored
         # 0.3 --> explored/empty
@@ -74,7 +73,7 @@ class IndoorExplorers(gym.Env):
     #checks if is a wall in pos
     def __wall_exists(self, pos):
         row, col = pos
-        return #reescrever
+        return 1.0 in self.groundTruthMap[row,col]
         #return PRE_IDS['wall'] in self._base_grid[row, col]
 
     #checks if cell is valid (aka inside bounds)
@@ -107,8 +106,68 @@ class IndoorExplorers(gym.Env):
         self._updateMaps()
 
         #update de ground_truth_map 
-        self._full_obs[self.agent_pos[agent_i][0]][self.agent_pos[agent_i][1]] = PRE_IDS['agent'] + str(agent_i + 1)
+        self._full_obs[self.agents[agent_i].pos[0]][self.agents[agent_i].pos[1]] = PRE_IDS['agent'] + str(agent_i + 1)
+        #self._full_obs[self.agent_pos[agent_i][0]][self.agent_pos[agent_i][1]] = PRE_IDS['agent'] + str(agent_i + 1)
+        #dont worry that the the previous pos of the agent is set to 0 inside __update_aget_pos()
 
+    def __update_agent_pos(self, agent_i, move):
+
+        curr_pos = copy.copy(self.agents[agent_i].pos) #agent_pos[agent_i])
+        next_pos = None
+        if move == 0:  # down
+            next_pos = [curr_pos[0] + 1, curr_pos[1]]
+        elif move == 1:  # left
+            next_pos = [curr_pos[0], curr_pos[1] - 1]
+        elif move == 2:  # up
+            next_pos = [curr_pos[0] - 1, curr_pos[1]]
+        elif move == 3:  # right
+            next_pos = [curr_pos[0], curr_pos[1] + 1]
+        elif move == 4:  # no-op
+            pass
+        else:
+            raise Exception('Action Not found!')
+
+        if next_pos is not None and self._is_cell_vacant(next_pos):
+            self.agents[agent_i].pos = next_pos #agent_pos[agent_i] = next_pos
+            self._full_obs[curr_pos[0]][curr_pos[1]] = PRE_IDS['empty']
+            self.__update_agent_view(agent_i)
+
+    #check which would the the next_pos if hipotethicaly the specified "move" was applied
+    def __next_pos(self, curr_pos, move):
+        if move == 0:  # down
+            next_pos = [curr_pos[0] + 1, curr_pos[1]]
+        elif move == 1:  # left
+            next_pos = [curr_pos[0], curr_pos[1] - 1]
+        elif move == 2:  # up
+            next_pos = [curr_pos[0] - 1, curr_pos[1]]
+        elif move == 3:  # right
+            next_pos = [curr_pos[0], curr_pos[1] + 1]
+        elif move == 4:  # no-op
+            next_pos = curr_pos
+        return next_pos
+
+    #TODO alterar para: um agent vê o seu explored map basicamente
+    def get_agents_obs(self):
+        _obs = []
+        for agent_i in range(self.n_agents):
+            pos = self.agents[agent_i].pos
+            _agent_i_obs = [pos[0] / (self._grid_shape[0] - 1), pos[1] / (self._grid_shape[1] - 1)]  # coordinates
+
+            # check if prey is in the view area
+            _prey_pos = np.zeros(self._agent_view_mask)  # prey location in neighbour
+            for row in range(max(0, pos[0] - 2), min(pos[0] + 2 + 1, self._grid_shape[0])):
+                for col in range(max(0, pos[1] - 2), min(pos[1] + 2 + 1, self._grid_shape[1])):
+                    if PRE_IDS['prey'] in self._full_obs[row][col]:
+                        _prey_pos[row - (pos[0] - 2), col - (pos[1] - 2)] = 1  # get relative position for the prey loc.
+
+            _agent_i_obs += _prey_pos.flatten().tolist()  # adding prey pos in observable area
+            _agent_i_obs += [self._step_count / self._max_steps]  # adding time
+            _obs.append(_agent_i_obs)
+
+        if self.full_observable:
+            _obs = np.array(_obs).flatten().tolist()
+            _obs = [_obs for _ in range(self.n_agents)]
+        return _obs
 
     def __create_grid(self):
         # _full_obs --> 0.5 obstacle
@@ -125,6 +184,9 @@ class IndoorExplorers(gym.Env):
         randomMap[randomMap == 0.0] = 0.3 #explored cells value is 0.3
         self.groundTruthMap = randomMap.copy() #save the ground truth, fully explored
         return randomMap
+
+    def __draw_base_img(self):
+        self._base_img = draw_grid(self._grid_shape[0], self._grid_shape[1], cell_size=CELL_SIZE, fill=UNEXPLORED_COLOR)
 
     #CONFIRM!!
     def create_lidars(self):
@@ -145,36 +207,39 @@ class IndoorExplorers(gym.Env):
     #CONFIRM!!
     def _updateMaps(self):
 
-        for agent_i in self.agents:
-            self.pastExploredMaps[agent_i] = self.exploredMaps[agent_i].copy()
+        for agent_i in range(self.n_agents):
+            self.pastExploredMaps[agent_i] = self.agents[agent_i].exploredMap.copy() #exploredMaps[agent_i].copy()
 
             lidarX= self.lidarsIndexes[agent_i][:,0]
             lidarY = self.lidarsIndexes[agent_i][:,1]
-            self.exploredMaps[agent_i][lidarX, lidarY] = self.groundTruthMap[lidarX, lidarY]
+            self.agents[agent_i].exploredMap[lidarX, lidarY] = self.groundTruthMap[lidarX, lidarY] #exploredMaps[agent_i][lidarX, lidarY] = self.groundTruthMap[lidarX, lidarY]
 
-            self.exploredMaps[agent_i][self.agent_pos[agent_i][0],[self.agent_pos[agent_i][1]]] = agent_i
+            self.agents[agent_i].exploredMap[self.agents[agent_i].pos[0],[self.agents[agent_i].pos[1]]] = agent_i 
+            #self.agents[agent_i].exploredMap[self.agent_pos[agent_i][0],[self.agent_pos[agent_i][1]]] = agent_i 
 
     #CONFIRM!!
     def _activateLidars(self):
 
-        for agent_i in self.agents: 
-            self.ldr[agent_i].update(self.agent_pos[agent_i]) #TODO CONFIRMAR!! alternativa: [self.agent_pos[agent_i][0],[self.agent_pos[agent_i][1]]]
+        for agent_i in range(self.n_agents): 
+            self.ldr[agent_i].update(self.agents[agent_i].pos) #TODO CONFIRMAR!! alternativa: [self.agents[agent_i].pos[0],[self.agents[agent_i].pos[1]]]
             thetas[agent_i], ranges[agent_i] = self.ldr[agent_i].thetas, self.ldr[agent_i].ranges
             indexes[agent_i] = self.ldr[agent_i].idx
 
         self.lidarsIndexes = indexes
 
 
-    #TODO esta vai ser a função de inicialização do mapa e das posições de cada agente
+    #CONFIRMAR!! esta vai ser a função de inicialização do mapa e das posições de cada agente
     def __init_full_obs(self):
         #creates new map
         self._full_obs = self.__create_grid()
+
+        self.create_lidars()
 
         # create an empty exploredMap for each agent and
         # inserts agents at random locations #TODO mudar para que dê spawn nos cantos do mapa
         for agent_i in range(self.n_agents):
             # 0 if not visible/visited, 1 if visible/visited
-            self.exploredMaps[agent_i] = np.zeros(self.SIZE, dtype=np.double)
+            self.agents[agent_i].exploredMap = np.zeros(self.SIZE, dtype=np.double) #exploredMaps[agent_i] = np.zeros(self.SIZE, dtype=np.double)
 
             if RANDOM_SPAWN: random_spawn=True
             while True:
@@ -185,7 +250,7 @@ class IndoorExplorers(gym.Env):
                     pos = conf["initial"][agent_i]
 
                 if self._is_cell_vacant(pos):
-                    self.agent_pos[agent_i] = pos
+                    self.agents[agent_i].pos = pos #agent_pos[agent_i] = pos
                     break
                 else:
                     #set flag to generate a new possible spawn position
@@ -197,86 +262,60 @@ class IndoorExplorers(gym.Env):
             #self.__update_agent_view(agent_i) 
         
         #OUU fazer assim:
-        # initialing position is explored
+        # initial position is explored
         self._activateLidars()
 
         #update everyone's explored maps
         self._updateMaps()
 
-        #render??
+        #create grid for later render
         self.__draw_base_img()
 
-    def __update_agent_pos(self, agent_i, move):
-
-        curr_pos = copy.copy(self.agent_pos[agent_i])
-        next_pos = None
-        if move == 0:  # down
-            next_pos = [curr_pos[0] + 1, curr_pos[1]]
-        elif move == 1:  # left
-            next_pos = [curr_pos[0], curr_pos[1] - 1]
-        elif move == 2:  # up
-            next_pos = [curr_pos[0] - 1, curr_pos[1]]
-        elif move == 3:  # right
-            next_pos = [curr_pos[0], curr_pos[1] + 1]
-        elif move == 4:  # no-op
-            pass
-        else:
-            raise Exception('Action Not found!')
-
-        if next_pos is not None and self._is_cell_vacant(next_pos):
-            self.agent_pos[agent_i] = next_pos
-            self._full_obs[curr_pos[0]][curr_pos[1]] = PRE_IDS['empty']
-            self.__update_agent_view(agent_i)
-
-    def __next_pos(self, curr_pos, move):
-        if move == 0:  # down
-            next_pos = [curr_pos[0] + 1, curr_pos[1]]
-        elif move == 1:  # left
-            next_pos = [curr_pos[0], curr_pos[1] - 1]
-        elif move == 2:  # up
-            next_pos = [curr_pos[0] - 1, curr_pos[1]]
-        elif move == 3:  # right
-            next_pos = [curr_pos[0], curr_pos[1] + 1]
-        elif move == 4:  # no-op
-            next_pos = curr_pos
-        return next_pos
 
     #TODO
     def reset(self):
         self._total_episode_reward = [0 for _ in range(self.n_agents)]
-        self.agent_pos = {}
+        #old: self.agent_pos = {} -> done in reset_agents() below
+        self.reset_agents() 
 
         #criar novo mapa e dá spawn de novo dos agents
+        #cria lidares novos (isto inclui criar novos obstaulos) com base no novo mapa
+        #activa os lidars e dá update dos explored maps de cada um 
+        #com base no que cada um consegue ver
         self.__init_full_obs()
+
 
         #repor todas as outras variaveis
         self._step_count = 0
         self._steps_beyond_done = None
-        self._agent_dones = [False for _ in range(self.n_agents)]
+        #old: _agent_dones = [False for _ in range(self.n_agents)] -> done in reset_agents a few lines up
 
         return self.get_agent_obs()
 
-    #TODO
+    #CONFIRMAR!!
     def step(self, agents_action):
         assert (self._step_count is not None), \
             "Call reset before using step method."
 
         self._step_count += 1
+        #TODO compute reward 
         rewards = [self._step_cost for _ in range(self.n_agents)]
 
+        #apply chosen action
         for agent_i, action in enumerate(agents_action):
-            if not (self._agent_dones[agent_i]):
+            if not (self.agents[agent_i].done): #_agent_dones[agent_i]):
                 self.__update_agent_pos(agent_i, action)
         
-        if (self._step_count >= self._max_steps) or (True not in self._prey_alive):
+        #check if max steps as been reached or the all map as been explored
+        if (self._step_count >= self._max_steps) or (0.0 not in self._full_obs):  #old: or (True not in self._prey_alive):
             for i in range(self.n_agents):
-                self._agent_dones[i] = True
+                self.agents[i].done = True  #_agent_dones[i] = True
 
         for i in range(self.n_agents):
             self._total_episode_reward[i] += rewards[i]
 
         # Check for episode overflow
-        if all(self._agent_dones):
+        if all(self.get_agents_dones()):
             if self._steps_beyond_done is None:
                 self._steps_beyond_done = 0
             else:
@@ -290,23 +329,43 @@ class IndoorExplorers(gym.Env):
                     )
                 self._steps_beyond_done += 1
 
-        return self.get_agent_obs(), rewards, self._agent_dones#, {'prey_alive': self._prey_alive}
+        #TODO colocar na função render()?
+        # for agent in range(self.n_agents):
+        #     printMap(self.agents[agent_i].exploredMap)
+
+        # printMap(_full_obs)
+
+        return self.get_agent_obs(), rewards, self.get_agents_dones()  #_agent_dones
+        #the info parameter was: {'prey_alive': self._prey_alive} in the original code, TODO see what extra indo would be useful for me
 
     #TODO
     def render(self, mode='human'):
         assert (self._step_count is not None), \
             "Call reset before using render method."
 
+        printMap(_full_obs)
+
         img = copy.copy(self._base_img)
-        for agent_i in range(self.n_agents):
-            for neighbour in self.__get_neighbour_coordinates(self.agent_pos[agent_i]):
-                fill_cell(img, neighbour, cell_size=CELL_SIZE, fill=AGENT_NEIGHBORHOOD_COLOR, margin=0.1)
-            fill_cell(img, self.agent_pos[agent_i], cell_size=CELL_SIZE, fill=AGENT_NEIGHBORHOOD_COLOR, margin=0.1)
 
         for agent_i in range(self.n_agents):
-            draw_circle(img, self.agent_pos[agent_i], cell_size=CELL_SIZE, fill=AGENT_COLORS[agent_i])
-            write_cell_text(img, text=str(agent_i + 1), pos=self.agent_pos[agent_i], cell_size=CELL_SIZE,
-                            fill='white', margin=0.4)
+            for neighbour in self.__get_neighbour_coordinates(self.agents[agent_i].pos ): #agent_pos[agent_i]):
+                fill_cell(img, neighbour, cell_size=CELL_SIZE, fill=AGENT_NEIGHBORHOOD_COLOR, margin=0.1)
+            fill_cell(img, self.agents[agent_i].pos, cell_size=CELL_SIZE, fill=AGENT_NEIGHBORHOOD_COLOR, margin=0.1)
+
+        for col in range(0, _grid_shape[1]):
+            for row in range(0, _grid_shape[0]):
+                pos = [row,col]
+                if _full_obs[row][col] ==  0.3: #explored cells
+                    fill_cell(img,pos, cell_size=CELL_SIZE, fill='white')
+                if _full_obs[row][col] == 0.5: #walls
+                    fill_cell(img,pos, cell_size=CELL_SIZE, fill=WALL_COLOR)
+
+        for agent_i in range(self.n_agents):
+            draw_circle(img, self.agents[agent_i].pos, cell_size=CELL_SIZE, fill=agents[agent_i].color)
+            #old: draw_circle(img, self.agent_pos[agent_i], cell_size=CELL_SIZE, fill=AGENT_COLORS[agent_i])
+            write_cell_text(img, text=str(agent_i + 1), pos=self.agents[agent_i].pos, cell_size=CELL_SIZE,
+                            fill='white', margin=0.4)  
+            #old: write_cell_text(img, text=str(agent_i + 1), pos=self.agent_pos[agent_i], cell_size=CELL_SIZE, fill='white', margin=0.4) 
 
         img = np.asarray(img)
         if mode == 'rgb_array':
@@ -327,8 +386,8 @@ class IndoorExplorers(gym.Env):
             self.viewer.close()
             self.viewer = None
 
-    def create_agents(n_agents):
-        agents = [Agent() for i in range(num_agents)]
+    def create_agents(self):
+        agents = [Agent() for i in range(self.n_agents)]
         for i, agent in enumerate(agents):
             agent.name = 'agent %d' % i
             agent.id = i
@@ -339,6 +398,15 @@ class IndoorExplorers(gym.Env):
             
         return agents
 
+    def reset_agents(self):
+        for agent_i in range(self.n_agents):
+            self.agents.done = False
+            self.agents.pos = None
+            #TODO ver o que mais é preciso dar reset??
+    
+    def get_agents_dones():
+        return [agent.done for agent in agents]
+
 
 class Agent(object):
     def __init__(self):
@@ -346,16 +414,19 @@ class Agent(object):
         # name 
         self.name = ''
         self.id = None
+        self.pos = None
+        self.done = False
         #each agent has its own explored map
-        self.explored_map = []
+        self.exploredMap = []
+        self.pastExploredMap = []
         # agents are movable by default
-        self.movable = True
+        #self.movable = True
         # cannot send communication signals
         self.silent = False
         # cannot observe the world
-        self.blind = False
+        #self.blind = False
         # physical motor noise amount
-        self.u_noise = None
+        #self.u_noise = None
         # communication noise amount
         self.c_noise = None
         # control range
@@ -363,15 +434,18 @@ class Agent(object):
         # color
         self.color = None
         # state
-        self.state = AgentState() #simplificar? acho qu epode ser útil para saber se está a comunicar ou non
+        self.state = AgentState() #simplificar? acho que pode ser útil para saber se está a comunicar ou non
         # action
         self.action = None #vou simplificar e vai ser um nº inteiro #Action()
         # script behavior to execute
         self.action_callback = None #-> TODO pôr a policy/model aqui??? 
 
+        
+
 
 AGENT_COLORS = [ImageColor.getcolor('blue', mode='RGB'),ImageColor.getcolor('red', mode='RGB'),ImageColor.getcolor('green', mode='RGB'),ImageColor.getcolor('yellow', mode='RGB')]
 AGENT_NEIGHBORHOOD_COLOR = (186, 238, 247)
+UNEXPLORED_COLOR = ImageColor.getcolor('lightgrey', mode='RGB')
 
 CELL_SIZE = 35
 

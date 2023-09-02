@@ -44,7 +44,7 @@ if __name__ == '__main__':
         env.render()
 
         while not all(done_n):
-            action_n = env.action_space.sample() #insert policy
+            action_n = env.action_space.sample() #insert policy, in out case dddqn()
             obs_n, reward_n, done_n, info = env.step(action_n)
             ep_reward += sum(reward_n)
             env.render()
