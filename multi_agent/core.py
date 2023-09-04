@@ -1,11 +1,5 @@
 import numpy as np
 
-from indoor_explorers.utils.printMaps import printMap
-from indoor_explorers.utils.randomMapGenerator import Generator
-from indoor_explorers.utils.lidarSensor import Lidar
-from indoor_explorers.render.viewer import Viewer
-from indoor_explorers.envs.settings import DEFAULT_CONFIG
-
 # physical/external base state of all entites
 # class EntityState(object):
 #     def __init__(self):

@@ -5,7 +5,7 @@ from matplotlib.colors import ListedColormap
 import matplotlib.patches as mpatches
 
 #prints 1 square map
-def printMap(matrix):
+def printMap(matrix, n_agents):
 
     #define discrete colors for the colormap
     cmap1 = ListedColormap(["lightgrey", "white", "black", "blue", "red", "green", "yellow"],"all_camp")
@@ -57,7 +57,10 @@ def printMap(matrix):
 
         pos=ax.imshow(data_3d,cmap=cmap4) #outra alternativa é o matshow, mas assim o titulo nao aparece
 
-        patches = [ mpatches.Patch(color=colors1[i], label=labels1[i] ) for i in range(len(values)) ]
+        
+        #patches = [mpatches.Patch(color=colors1[i], label=labels1[i] ) for i in range(len(values)) ]
+        patches = [mpatches.Patch(color=colors1[x], label=labels1[x] ) for x in range(n_agents+3) ]
+        
         # put those patched as legend-handles into the legend
         plt.legend(handles=patches, bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0. )
 
@@ -69,7 +72,7 @@ def printMap(matrix):
     else:
         pos=ax.imshow(data_3d,cmap=cmap5) #outra alternativa é o matshow, mas assim o titulo nao aparece
 
-        patches = [ mpatches.Patch(color=colors1[i], label=labels2[i] ) for i in range(len(values)) ]
+        patches = [ mpatches.Patch(color=colors1[i], label=labels2[i] ) for i in range(n_agents+2)  ]
         # put those patched as legend-handles into the legend
         plt.legend(handles=patches, bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0. )
 

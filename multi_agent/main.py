@@ -1,30 +1,24 @@
+import gym
+import numpy as np
+import math
+import time
+import argparse
+
 from gym.envs.registration import register
 
-from indoor_explorers.utils.printMaps import printMap
-from indoor_explorers.utils.randomMapGenerator import Generator
-from indoor_explorers.utils.lidarSensor import Lidar
-from indoor_explorers.render.viewer import Viewer
-from ma_gym.envs.indoor_explorers.settings import DEFAULT_CONFIG as conf
+from multi_agent.utils.multi_printMaps import printMap
+from multi_agent.utils.randomMapGenerator import Generator
+from multi_agent.utils.lidarSensor import Lidar
+#from indoor_explorers.render.viewer import Viewer
+from multi_agent.settings import DEFAULT_CONFIG as conf
+from multi_agent.indoor_explorers import IndoorExplorers
 
 
 from ma_gym.wrappers import Monitor
 
 
-
-for game_info in [[(21, 21), 2], [(21, 21), 4]]:  # [(grid_shape, predator_n, prey_n),..]
-    grid_shape, n_agents = game_info
-    _game_name = 'IndoorExplorers{}x{}'.format(grid_shape[0], grid_shape[1])
-
-    register(
-            id='{}-v0'.format(_game_name),
-            entry_point='ma_gym.envs.indoor_explorers:IndoorExplorers',
-            kwargs={
-                'grid_shape': grid_shape, 'n_agents': n_agents
-            }
-        )
-
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Random Agent for ma-gym')
+    parser = argparse.ArgumentParser(description='Random Agent for indoor-explorers')
     parser.add_argument('--env', default='IndoorExplorers21x21-v0',
                         help='Name of the environment (default: %(default)s)')
     parser.add_argument('--episodes', type=int, default=10,
@@ -47,7 +41,8 @@ if __name__ == '__main__':
             action_n = env.action_space.sample() #insert policy, in out case dddqn()
             obs_n, reward_n, done_n, info = env.step(action_n)
             ep_reward += sum(reward_n)
-            env.render()
+            env.render(print_maps=True)
+            print(action_n)
             time.sleep(0.1)
 
         print('Episode #{} Reward: {}'.format(ep_i, ep_reward))

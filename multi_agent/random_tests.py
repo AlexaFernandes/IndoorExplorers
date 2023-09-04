@@ -25,6 +25,10 @@ class Agent(object):
         # script behavior to execute
         self.action_callback = None #-> TODO pôr a policy/model aqui??? 
 
+    def does_wall_exists( self,pos):
+        row, col = pos
+        return (1.0 in self.exploredMap[row,col])
+
 def change_dones(agents):
     for i, agent in enumerate(agents):
         if i%2==0:
@@ -35,9 +39,7 @@ def change_dones(agents):
 def get_agents_dones():
     return [agent.done for agent in agents]
 
-def __wall_exists(self, pos):
-    row, col = pos
-    return 1.0 in self.groundTruthMap
+
     
 
 
@@ -64,8 +66,18 @@ if __name__ == "__main__":
     #     agents[agent_i].pos = [0,0]
     #     print("{} is in {}".format(agents[agent_i].id, agents[agent_i].pos))
 
-    #print(groundTruthMap)
-    #print("{}".format([1.0 in groundTruthMap]))
+    print(groundTruthMap)
+    print("{}".format([1.0 in groundTruthMap]))
+    agents[0].exploredMap = groundTruthMap.copy()
+
+    value = agents[0].does_wall_exists()
+    print(value)
+
+
+
+
+
+
 
     # _full_obs =np.array([ [1.0, 0.3, 0.3 , 2.0],
     #                       [0.3, 0.3, 0.3, 0.3 ],
@@ -73,15 +85,22 @@ if __name__ == "__main__":
     #                       [3.0, 0.0, 0.0, 4.0]
     #             ])
 
-    _full_obs =np.array([ [1.0, 0.3, 0.3 , 2.0],
-                          [0.3, 0.3, 0.3, 0.3],
-                          [0.5, 0.5, 0.5, 0.5],
-                          [3.0, 0.0, 0.0, 4.0]
-                ])
-    _grid_shape = (3,4)
-    print(_full_obs.shape)
+    # _full_obs =np.array([ [1.0, 0.3, 0.3 , 2.0],
+    #                       [0.3, 0.3, 0.3, 0.3],
+    #                       [0.5, 0.5, 0.5, 0.5],
+    #                       [3.0, 0.0, 0.0, 0.0]
+    #             ])
+    # _grid_shape = (3,4)
+    # print(_full_obs.shape)
 
-    printMap(_full_obs)
+    # printMap(_full_obs,3)
+
+
+
+
+
+
+
 
     # for col in range(0, _grid_shape[1]):
     #     for row in range(0, _grid_shape[0]):
