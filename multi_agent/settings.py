@@ -48,6 +48,7 @@ DEFAULT_CONFIG={
               "night_color":(20, 20, 20),
               "draw_lidar":True,
               "draw_grid":True,
-              "draw_traceline":False
+              "draw_traceline":False,
+              "print_map": True
              }
 }

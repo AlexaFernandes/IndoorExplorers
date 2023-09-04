@@ -3,10 +3,10 @@ import numpy as np
 import math
 import time
 import argparse
+from colorama import Fore, Back, Style
 
 from gym.envs.registration import register
 
-from multi_agent.utils.multi_printMaps import printMap
 from multi_agent.utils.randomMapGenerator import Generator
 from multi_agent.utils.lidarSensor import Lidar
 #from indoor_explorers.render.viewer import Viewer
@@ -39,10 +39,12 @@ if __name__ == '__main__':
 
         while not all(done_n):
             action_n = env.action_space.sample() #insert policy, in out case dddqn()
+            print(Fore.RED) 
+            print(action_n)
+            print(Style.RESET_ALL)
             obs_n, reward_n, done_n, info = env.step(action_n)
             ep_reward += sum(reward_n)
-            env.render(print_maps=True)
-            print(action_n)
+            env.render()
             time.sleep(0.1)
 
         print('Episode #{} Reward: {}'.format(ep_i, ep_reward))

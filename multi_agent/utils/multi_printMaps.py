@@ -4,35 +4,37 @@ import matplotlib.pyplot as plt
 from matplotlib.colors import ListedColormap
 import matplotlib.patches as mpatches
 
+
+
+# define color map 
+color_map = {   0.0: np.array([211, 211, 211]), #lighgrey
+                0.3: np.array([255,255,255]), # white
+                0.5: np.array([0,0,0]),  
+                1.0: np.array([0, 150, 255]),# blue 
+                2.0: np.array([220, 10, 10]), #red
+                3.0: np.array([0, 204, 0]), #green
+                4.0: np.array([255, 215, 0]) #yellow
+            }
+
+colors1= ["#D7D7D7","#FFFFFF","#000000","#0096FF","#E11414" ,"#00CC00","#FFD700"]
+labels1= ['unexplored','free','obstacle','UAV0','UAV1','UAV2','UAV3']
+
+colors2 = ["#D7D7D7","#FFFFFF","#0096FF","#E11414" ,"#00CC00","#FFD700"]
+labels2= ['unexplored','free','UAV0','UAV1','UAV2','UAV3']
+
 #prints 1 square map
 def printMap(matrix, n_agents):
 
     #define discrete colors for the colormap
-    cmap1 = ListedColormap(["lightgrey", "white", "black", "blue", "red", "green", "yellow"],"all_camp")
-    cmap2 = ListedColormap(["lightgrey", "white", "blue"],"no_obstacles_cmap")
-    cmap3 = ListedColormap([[211, 211, 211],[255,255,255],[0,0,0], [0, 150, 255],[225, 20, 20],[0, 204, 0],[255, 215, 0] ])
-
-    colors1= ["#D7D7D7","#FFFFFF","#000000","#0096FF","#E11414" ,"#00CC00","#FFD700"]
-    labels1= ['unexplored','free','obstacle','UAV0','UAV1','UAV2','UAV3']
-
-    colors2 = ["#D7D7D7","#FFFFFF","#0096FF","#E11414" ,"#00CC00","#FFD700"]
-    labels2= ['unexplored','free','UAV0','UAV1','UAV2','UAV3']
+    # cmap1 = ListedColormap(["lightgrey", "white", "black", "blue", "red", "green", "yellow"],"all_camp")
+    # cmap2 = ListedColormap(["lightgrey", "white", "blue"],"no_obstacles_cmap")
+    # cmap3 = ListedColormap([[211, 211, 211],[255,255,255],[0,0,0], [0, 150, 255],[225, 20, 20],[0, 204, 0],[255, 215, 0] ])
 
     cmap4= ListedColormap(colors1)
     cmap5= ListedColormap(colors2)
-
-    # define color map 
-    color_map = {   0.0: np.array([211, 211, 211]), #lighgrey
-                    0.3: np.array([255,255,255]), # white
-                    0.5: np.array([0,0,0]),  
-                    1.0: np.array([0, 150, 255]),# blue 
-                    2.0: np.array([220, 10, 10]), #red
-                    3.0: np.array([0, 204, 0]), #green
-                    4.0: np.array([255, 215, 0]) #yellow
-             }
+    
     lst = [0.0, 0.3, 0.6, 1.0, 2.0,3.0,4.0]
         
-
     fig, ax= plt.subplots()
     fig.set_tight_layout(True)
     #adding grid lines
@@ -50,14 +52,60 @@ def printMap(matrix, n_agents):
     #         c = matrix[j,i]
     #         ax.text(i, j, str("%.1f"%c), va='center', ha='center')
 
-    ax.set_title("Ground Truth Map") #set title name
+    ax.set_title("Updated map") #set title name
     values = np.unique(matrix.ravel())
     
     if 0.5 in matrix: #if an obstacle as been found the colormap should include the color blue and the colorbar should be accordingly
-
         pos=ax.imshow(data_3d,cmap=cmap4) #outra alternativa é o matshow, mas assim o titulo nao aparece
 
+        #patches = [mpatches.Patch(color=colors1[i], label=labels1[i] ) for i in range(len(values)) ]
+        patches = [mpatches.Patch(color=colors1[x], label=labels1[x] ) for x in range(n_agents+3) ]
         
+        # put those patched as legend-handles into the legend
+        plt.legend(handles=patches, bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0. )
+
+    else:
+        pos=ax.imshow(data_3d,cmap=cmap5) #outra alternativa é o matshow, mas assim o titulo nao aparece
+
+        patches = [ mpatches.Patch(color=colors1[i], label=labels2[i] ) for i in range(n_agents+2)  ]
+        # put those patched as legend-handles into the legend
+        plt.legend(handles=patches, bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0. )
+    
+    plt.show()
+
+
+#TODO: INCOMPLETE! grid lines not right
+def print2Map(matrix, n_agents, groundTruthMap):
+    # colors1= ["#D7D7D7","#FFFFFF","#000000","#0096FF","#E11414" ,"#00CC00","#FFD700"]
+    # labels1= ['unexplored','free','obstacle','UAV0','UAV1','UAV2','UAV3']
+
+    # colors2 = ["#D7D7D7","#FFFFFF","#0096FF","#E11414" ,"#00CC00","#FFD700"]
+    # labels2= ['unexplored','free','UAV0','UAV1','UAV2','UAV3']
+
+    cmap4= ListedColormap(colors1)
+    cmap5= ListedColormap(colors2)
+
+    fig, ax = plt.subplots(1,2, sharex=True, sharey=True)#,figsize=(12,2))
+    fig.set_tight_layout(True)
+
+
+
+    
+
+    
+
+    ax[0].set_title("Updated map") #set title name
+    values = np.unique(matrix.ravel())
+
+    data_3d = np.ndarray(shape=(matrix.shape[0], matrix.shape[1], 3), dtype=int)
+    for i in range(0, matrix.shape[0]):
+        for j in range(0, matrix.shape[1]):
+            data_3d[i][j] = color_map[matrix[i][j]]
+
+    if 0.5 in matrix: #if an obstacle as been found the colormap should include the color blue and the colorbar should be accordingly
+
+        pos=ax[0].imshow(data_3d,cmap=cmap4) #outra alternativa é o matshow, mas assim o titulo nao aparece
+
         #patches = [mpatches.Patch(color=colors1[i], label=labels1[i] ) for i in range(len(values)) ]
         patches = [mpatches.Patch(color=colors1[x], label=labels1[x] ) for x in range(n_agents+3) ]
         
@@ -70,7 +118,7 @@ def printMap(matrix, n_agents):
         # for j, lab in enumerate(['$unexplored$','$free$','$obstacle$','$UAV0$','$UAV1$','$UAV2$','$UAV3$']):
         #     cbar.ax.text(1.0, (2 * j + 1) / 0.055, lab, ha='left', va='center')#0.055
     else:
-        pos=ax.imshow(data_3d,cmap=cmap5) #outra alternativa é o matshow, mas assim o titulo nao aparece
+        pos=ax[0].imshow(data_3d,cmap=cmap5) #outra alternativa é o matshow, mas assim o titulo nao aparece
 
         patches = [ mpatches.Patch(color=colors1[i], label=labels2[i] ) for i in range(n_agents+2)  ]
         # put those patched as legend-handles into the legend
@@ -80,5 +128,30 @@ def printMap(matrix, n_agents):
         # cbar.ax.get_yaxis().set_ticks([])
         # for j, lab in enumerate(['$unexplored$','$free$','$UAV0$','$UAV1$','$UAV2$','$UAV3$']):
         #     cbar.ax.text(0.8, (2 * j + 1) / 10.0, lab, ha='left', va='center')
-    
+
+    #adding grid lines
+    plt.hlines(y=np.arange(0, groundTruthMap.shape[1])+0.5, xmin=np.full(groundTruthMap.shape[1], 0)-0.5, xmax=np.full(groundTruthMap.shape[1], groundTruthMap.shape[1])-0.5, color="grey")
+    plt.vlines(x=np.arange(0, groundTruthMap.shape[0])+0.5, ymin=np.full(groundTruthMap.shape[0], 0)-0.5, ymax=np.full(groundTruthMap.shape[0], groundTruthMap.shape[0])-0.5, color="grey")
+
+    ax[1].set_title("Ground Truth Map") #set title name
+    #values = np.unique(groundTruthMap.ravel())
+
+    data_3d = np.ndarray(shape=(groundTruthMap.shape[0], groundTruthMap.shape[1], 3), dtype=int)
+    for i in range(0, groundTruthMap.shape[0]):
+        for j in range(0, groundTruthMap.shape[1]):
+            data_3d[i][j] = color_map[groundTruthMap[i][j]]
+
+    pos=ax[1].imshow(data_3d,cmap=cmap5) #outra alternativa é o matshow, mas assim o titulo nao aparece
+
+    # patches = [ mpatches.Patch(color=colors1[i], label=labels2[i] ) for i in range(n_agents+2)  ]
+    # # put those patched as legend-handles into the legend
+    # plt.legend(handles=patches, bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0. )
+
+
+    # for i, ax in enumerate(axn.flat):
+    #     k = list(cf_matrix)[i]
+    #     sns.heatmap(cf_matrix[k], ax=ax,cbar=i==4)
+    #     ax.set_title(k,fontsize=8)
+
     plt.show()
+
