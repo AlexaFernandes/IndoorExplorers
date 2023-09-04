@@ -20,8 +20,8 @@ conf["obstacles"] = 4
 conf["obstacle_size"] = [1,1]
 conf["lidar_range"] = 6
 
-conf["viewer"]["width"] = size[0]*30
-conf["viewer"]["height"] = size[1]*30
+conf["viewer"]["width"] = size[0]*20
+conf["viewer"]["height"] = size[1]*20
 conf["viewer"]["night_color"] = (0,0,0)
 conf["viewer"]["draw_lidar"] = True
 
@@ -49,18 +49,18 @@ def plotHeatMap(img):
     else:
         plt.show()
     plt.close()
+if __name__ == "__main__":
+    env = gym.make('indoor_explorers:exploConf-v01', conf=conf)
+    observation = env.reset()
 
-env = gym.make('indoor_explorers:exploConf-v01', conf=conf)
-observation = env.reset()
+    for step in range(3):
 
-for step in range(3):
+        img = env.reset()
+        rend = env.render()
 
-    img = env.reset()
-    rend = env.render()
+        if SAVE:
+            saveRend(rend)
 
-    if SAVE:
-        saveRend(rend)
+        plotHeatMap(np.swapaxes(img, 0, 1))
 
-    plotHeatMap(np.swapaxes(img, 0, 1))
-
-env.close()
+    env.close()

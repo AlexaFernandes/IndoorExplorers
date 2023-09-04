@@ -22,7 +22,7 @@ class ExplorerConf(gym.Env):
         if conf==None:
             self.conf = DEFAULT_CONFIG
         else:
-            self.conf = conf
+            self.conf = confgroundTruthMap
 
         self.sizeX = self.conf["size"][0]
         self.sizeY = self.conf["size"][1]
@@ -208,7 +208,7 @@ class ExplorerConf(gym.Env):
     def printMaps(self):
         printMap(self.pastExploredMap)
 
-    def step(self, action, print):
+    def step(self, action, print=True):
         self.action = action
         self._applyRLactions(action)
         self._computeReward()
