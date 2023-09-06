@@ -4,7 +4,9 @@
 from multi_agent.utils.randomMapGenerator import Generator
 from multi_agent.settings import DEFAULT_CONFIG as conf
 import numpy as np
+import itertools
 from multi_agent.utils.multi_printMaps import printMap
+from itertools import combinations
 
 class Agent(object):
     def __init__(self):
@@ -17,6 +19,7 @@ class Agent(object):
         self.pastExploredMap = []
         self.done = False
         self.pos = [0,0]
+        self.c_range = 1.0
         # color
         self.color = None
         # state
@@ -29,6 +32,17 @@ class Agent(object):
         row, col = pos
         return (1.0 in self.exploredMap[row,col])
 
+    def in_range(self, agent2):
+        delta_pos = abs(np.subtract(np.array(self.pos), np.array(agent2.pos)) ) 
+        #delta_pos = self.pos - agent2.pos
+        dist = np.sqrt(np.sum(np.square(delta_pos)))
+        #print(delta_pos)
+
+        if delta_pos[0] > self.c_range and delta_pos[1] > self.c_range :
+            return False
+        else:
+            return True
+
 def change_dones(agents):
     for i, agent in enumerate(agents):
         if i%2==0:
@@ -40,8 +54,34 @@ def get_agents_dones():
     return [agent.done for agent in agents]
 
 
-    
+def merge_maps(maps, agent_list):
+        new_merged_map = np.full(maps[0].shape, 0.0)
 
+        for col in range(0, maps[0].shape[1]):
+            for row in range(0, maps[0].shape[0]):
+                for agent_i in agent_list:
+                    if maps[agent_i][row][col] != 0.0:
+                        new_merged_map[row][col]= maps[agent_i][row][col]
+
+        # for agent_i in agent_list:
+        #     self.agents[agent_i].exploredMap = new_merged_map.copy()
+        return new_merged_map
+
+def check_who_in_comm_range(agents, n_agents):
+    l = []
+    l.extend(range(0, n_agents))
+    #generate a list with all the unique pairings among all agents
+    combinations = list(itertools.combinations(l, 2))
+    in_range = []
+
+    #print(combinations)
+    #check for collisions between any 2 agents
+    for pair in combinations:
+        if agents[pair[0]].in_range(agents[pair[1]]) == True:
+            in_range.append(pair)
+        
+    #return list of agents in range
+    return in_range
 
 if __name__ == "__main__":
     agents = [Agent() for i in range(3)]
@@ -54,6 +94,8 @@ if __name__ == "__main__":
         # agent.silent = True
         #initialize other properties
     
+    agents[0].in_range
+
     gen = Generator(conf)
     groundTruthMap = gen.get_map().astype(np.double)
     # [[1.0, 0.3 ,0.3] ,
@@ -66,24 +108,18 @@ if __name__ == "__main__":
     #     agents[agent_i].pos = [0,0]
     #     print("{} is in {}".format(agents[agent_i].id, agents[agent_i].pos))
 
-    print(groundTruthMap)
-    print("{}".format([1.0 in groundTruthMap]))
-    agents[0].exploredMap = groundTruthMap.copy()
+    # print(groundTruthMap)
+    # print("{}".format([1.0 in groundTruthMap]))
+    # agents[0].exploredMap = groundTruthMap.copy()
 
-    value = agents[0].does_wall_exists()
-    print(value)
+    #value = agents[0].does_wall_exists()
+    #print(value)
 
-
-
-
+    print(check_who_in_comm_range(agents,3))
 
 
-
-    # _full_obs =np.array([ [1.0, 0.3, 0.3 , 2.0],
-    #                       [0.3, 0.3, 0.3, 0.3 ],
-    #                       [0.5, 0.5, 0.5, 0.5],
-    #                       [3.0, 0.0, 0.0, 4.0]
-    #             ])
+   
+    # print((_full_obs==groundTruthMap).all())
 
     # _full_obs =np.array([ [1.0, 0.3, 0.3 , 2.0],
     #                       [0.3, 0.3, 0.3, 0.3],
@@ -97,6 +133,47 @@ if __name__ == "__main__":
 
 
 
+
+    #-----------------------------------------------------------
+    # mat1 =np.array([ [1.0, 0.3, 0.0 , 0.0],
+    #                       [0.3, 0.3, 0.0, 0.0 ],
+    #                       [0.0, 0.0, 0.0, 0.0],
+    #                       [0.0, 0.0, 0.0, 0.0]
+    #             ])
+
+    # mat2 =np.array([ [0.0, 0.0, 0.3 , 2.0],
+    #                  [0.0, 0.0, 4.0, 0.3 ],
+    #                  [0.0, 0.0, 0.0, 0.0],
+    #                  [0.0, 0.0, 0.0, 0.0]
+    #             ])
+
+    # mat3 =np.array([ [0.0, 0.0, 0.0 , 0.0],
+    #                  [0.0, 0.0, 0.0, 0.0 ],
+    #                  [0.5, 0.5, 0.0, 0.0],
+    #                  [3.0, 0.3, 0.0, 0.0]
+    #             ])
+
+    # maps= [mat1,mat2,mat3]
+    
+
+    # agent_list = [0,1,2]
+
+    # merged_map = merge_maps(maps, agent_list)
+    # print(merged_map)
+
+    # mat1 = merged_map
+    # print(mat1)
+    # mat1[1,2] = 0.0
+    # mat4 = merged_map.copy()
+    # print(mat4)
+    # mat4[1,2] = 4.0
+
+    # print(mat4)
+
+    # print(merged_map)
+    #-----------------------------------------------------------
+    
+    
 
 
 
