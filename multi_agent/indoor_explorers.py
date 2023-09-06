@@ -6,6 +6,7 @@ import numpy as np
 from PIL import ImageColor
 from gym import spaces
 from gym.utils import seeding
+import itertools
 
 import multi_agent.core
 from multi_agent.utils.multi_printMaps import *
@@ -26,17 +27,17 @@ RANDOM_SPAWN=False #TODO colocar no ficheiro depois
 class IndoorExplorers(gym.Env):
     metadata = {'render.modes': ['human', 'rgb_array']}
 
-    def __init__(self, conf=DEFAULT_CONFIG, grid_shape=(21, 21),# n_agents=4,
-                 full_observable=False, penalty=-0.5, step_cost=-0.01, prey_capture_reward=5 ): #, max_steps=100,
+    def __init__(self, conf=DEFAULT_CONFIG,# grid_shape=(21, 21),# n_agents=4,
+                 full_observable=False, penalty=-0.5, step_cost=-0.01):#, prey_capture_reward=5 ): #, max_steps=100,
                  #agent_view_mask=(5, 5)):
-        assert len(grid_shape) == 2, 'expected a tuple of size 2 for grid_shape, but found {}'.format(grid_shape)
+        #assert len(grid_shape) == 2, 'expected a tuple of size 2 for grid_shape, but found {}'.format(grid_shape)
         # assert len(agent_view_mask) == 2, 'expected a tuple of size 2 for agent view mask,' \
         #                                   ' but found {}'.format(agent_view_mask)
-        assert grid_shape[0] > 0 and grid_shape[1] > 0, 'grid shape should be > 0'
+        #assert grid_shape[0] > 0 and grid_shape[1] > 0, 'grid shape should be > 0'
         # assert 0 < agent_view_mask[0] <= grid_shape[0], 'agent view mask has to be within (0,{}]'.format(grid_shape[0])
         # assert 0 < agent_view_mask[1] <= grid_shape[1], 'agent view mask has to be within (0,{}]'.format(grid_shape[1])
         self.conf=conf
-        self._grid_shape = grid_shape #tem os mesmos valores que conf["size"]
+        self._grid_shape = conf["size"] #grid_shape #tem os mesmos valores que conf["size"]
         self.n_agents = conf["n_agents"] 
         self.agents = self.create_agents() #TODO verificar se é preciso inicializar mais alguma coisa nesta função
         self._max_steps = conf["max_steps"]
@@ -44,7 +45,7 @@ class IndoorExplorers(gym.Env):
         self._steps_beyond_done = None
         self._penalty = penalty
         self._step_cost = step_cost
-        self._prey_capture_reward = prey_capture_reward
+        #self._prey_capture_reward = prey_capture_reward
         #self._agent_view_mask = agent_view_mask
 
         self.action_space = MultiAgentActionSpace([spaces.Discrete(5) for _ in range(self.n_agents)]) #por agora vou deixar 5 ações (L R U D NOOP) TODO: add share info
@@ -52,10 +53,19 @@ class IndoorExplorers(gym.Env):
         #self.exploredMaps = [None for _ in range(self.n_agents)] #explored map of every agent
         #self._agent_dones = [False for _ in range(self.n_agents)] #this is done when creating the agents
 
-        self.lidar_map = None # with no agents, just the walls -> 0.0 -> unexplored , 0.5 walls
+        self.lidar_map = None # with no agents, just the walls
+                              # lidar map --> 1.0 obstacle
+                              #               0.0 free
         self.groundTruthMap = self.__create_grid()  #map fully explored aka the ground truth to be compared  to -> 0.3 explored , 0.5 walls
+                                                    # ground truth map --> 0.5 obstacle
+                                                    #                      0.3 empty/explored
         self._full_obs = np.full(self._grid_shape, PRE_IDS['unexplored']) #map wit overall view from every agent - the global map
                                                                           #it starts totally unexplored
+                                                                          # _full_obs --> 0.5 obstacle
+                                                                          #               0.3 free to move
+                                                                          #               0.0 unexplored
+                                                                          #               >1  agent id
+        
 
         self.viewer = None
         self.full_observable = full_observable
@@ -94,11 +104,50 @@ class IndoorExplorers(gym.Env):
     def _is_cell_vacant(self, pos):
         return self.is_valid(pos) and (self._full_obs[pos[0]][pos[1]] == PRE_IDS['empty/explored'])
 
-    #check is there is any other agents nearby (for communication for instance) 
-    def look_for_other_agents(self, pos): #pos or better agent?
-        #TODO
-        #returns list or something with id and pos of each agent
-        return
+    #receives a list of agents that are in comm range that want to merge their maps
+    def merge_maps(self, agent_list):
+        new_merged_map = np.array.full(self._grid_shape, 0.0)
+
+        for col in range(0, self._grid_shape[1]):
+            for row in range(0, self._grid_shape[0]):
+                for agent_i in agent_list:
+                    if self.agents[agent_i].exploredMap[row][col] != 0.0:
+                        new_merged_map[row][col]= self.agents[agent_i].exploredMap[row][col]
+
+        #save a copy of the new map (it needs to be a copy otherwise they will have all the same reference and will be changing the same object)
+        for agent_i in agent_list:
+            self.agents[agent_i].exploredMap = new_merged_map.copy()
+        # if (self.exploredMap==map).all():
+        #     return
+        # else:  
+
+    #se calhar faria mais sentido a partir de um certo agent quem está in range
+    def check_who_in_comm_range(self):
+        l = []
+        l.extend(range(0, self.n_agents))
+        #generate a list with all the unique pairings among all agents
+        combinations = list(itertools.combinations(l, 2))
+
+        #check for collisions between any 2 agents
+        for pair in combinations:
+            if self.agents[pair[0]].in_range(self.agents[pair[1]]) == True:
+                in_range.append(pair)
+            
+        #return list of pairs of agents in range of eachother
+        return in_range
+
+    def check_who_in_comm_range_of(agent_i, self):
+        l = []
+        l.extend(range(0, self.n_agents))
+        l.remove(agent_i)
+
+        #check for collisions between agent_i and agent_x
+        for agent_x in l:
+            if self.agents[agent_i].in_range(self.agents[agent_x]) == True:
+                in_range.append(agent_x)
+            
+        #return list of agents idxs in range of agent_i
+        return in_range
 
     #is it necessary??
     def check_for_collision(self):
@@ -114,7 +163,7 @@ class IndoorExplorers(gym.Env):
 
         return collisions
 
-    #TODO 
+    #TODO when 2 agents are in risk of collision communicate who does what
     def communicate_move(self, agent1, agent2):
         #it is defined that agent1 takes the lead and choses first
 
@@ -124,23 +173,20 @@ class IndoorExplorers(gym.Env):
         return    
 
     def __create_grid(self):
-        # _full_obs --> 0.5 obstacle
-        #               0.3 free to move
-        #               0.0 unexplored
-        #               >1  agent id
         gen = Generator(self.conf)
         randomMap = gen.get_map().astype(np.double)
 
         #save lidar map
+        # lidar map --> 1.0 obstacle
+        #               0.0 free
         self.lidar_map = randomMap.copy() #save a map not explored, with 0.0 (unexplored) and 1.0 (walls)
 
         #correct values for groundTruthMap:
+        # ground truth map --> 0.5 obstacle
+        #                      0.3 empty/explored
         randomMap = randomMap.copy() #save the ground truth, fully explored
         randomMap[randomMap == 1.0] = PRE_IDS['wall'] #obstacle value is 0.5
         randomMap[randomMap == 0.0] = PRE_IDS['empty/explored'] #explored cells, which value is 0.3
-
-        #correct values for _full_obs:
-        #randomMap[randomMap == 1.0] = PRE_IDS['wall'] #obstacle value is 0.5
         
         return randomMap
 
@@ -387,7 +433,6 @@ class IndoorExplorers(gym.Env):
             self.done = True
             self.reward = self.conf["out_of_bounds_reward"]
 
-    #TODO
     def render(self, mode='human'):
         assert (self._step_count is not None), \
             "Call reset before using render method."
@@ -526,6 +571,8 @@ class Agent(object):
         #self.blind = False
         # physical motor noise amount
         #self.u_noise = None
+        #communication range
+        self.c_range = 3.0
         # communication noise amount
         self.c_noise = None
         # control range
@@ -539,7 +586,14 @@ class Agent(object):
         # script behavior to execute
         self.action_callback = None #-> TODO pôr a policy/model aqui??? 
 
-        
+    #it's considered in range, inside a square with distance of c_range squares around the agent
+    def in_range(self, agent2):
+        delta_pos = abs(np.subtract(np.array(self.pos), np.array(agent2.pos)) ) 
+
+        if delta_pos[0] > self.c_range and delta_pos[1] > self.c_range :
+            return False
+        else:
+            return True
 
 
 AGENT_COLORS = [ImageColor.getcolor('blue', mode='RGB'),ImageColor.getcolor('red', mode='RGB'),ImageColor.getcolor('green', mode='RGB'),ImageColor.getcolor('yellow', mode='RGB')]
