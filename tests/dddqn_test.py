@@ -2,11 +2,12 @@ import gym
 import numpy as np
 import math
 import time
+from time import *
 import argparse
 from indoor_explorers.envs.settings import DEFAULT_CONFIG as conf
 from learning.dddqn import *
 
-RENDER_GRID = True
+RENDER_GRID = False
 def get_conf():
     conf["size"] = [30, 30]
     conf["obstacles"] = 20
@@ -59,7 +60,7 @@ if __name__ == "__main__":
 
         if done:
             observation = env.reset()
-        time.sleep(0.3)
+        sleep(0.3)
         print(reward)
     print("final reward: "+ str(reward))
     env.close()
