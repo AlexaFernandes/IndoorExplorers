@@ -76,11 +76,11 @@ class IndoorExplorers(gym.Env):
         # 0.5 --> obstacle
         # >1.0 -> agents ids
         #highest value that can be observed in each cell is the max. agent id
-        self._obs_high = np.full(grid_shape, np.array(self.n_agents, dtype=np.float32)) 
+        self._obs_high = np.full(self._grid_shape, np.array(self.n_agents, dtype=np.float32)) 
         #lowest value that can be observed in each cell is 0.0
-        self._obs_low = np.full(grid_shape,np.array(0.0, dtype=np.float32))
+        self._obs_low = np.full(self._grid_shape,np.array(0.0, dtype=np.float32))
         self.observation_space = MultiAgentObservationSpace(
-            [spaces.Box(self._obs_low, self._obs_high, grid_shape) for _ in range(self.n_agents)])
+            [spaces.Box(self._obs_low, self._obs_high, self._grid_shape) for _ in range(self.n_agents)])
 
         self._total_episode_reward = None
         self.seed()
@@ -263,7 +263,7 @@ class IndoorExplorers(gym.Env):
         #create an array of lidar, one per agent
         self.ldr = [Lidar(r=self.conf["lidar_range"],
                          channels=self.conf["lidar_channels"],
-                         map=self.lidar_map)                     for _ in range(self.n_agents)]
+                         map=self.lidar_map, fov = [0,np.pi/2])                     for _ in range(self.n_agents)]
         
         #create list of obstacle indexes
         obstacles_idx = np.where(self.groundTruthMap == 1.0)

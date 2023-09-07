@@ -26,7 +26,7 @@ for game_info in [[(21, 21), 2], [(21, 21), 4]]:  # [(grid_shape, predator_n, pr
             id='{}-v0'.format(_game_name),
             entry_point='multi_agent:IndoorExplorers',
             kwargs={
-                'grid_shape': grid_shape#, 'n_agents': n_agents
+                #'grid_shape': grid_shape#, 'n_agents': n_agents
             }
         )
 

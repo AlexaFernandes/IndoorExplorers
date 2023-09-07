@@ -49,6 +49,6 @@ DEFAULT_CONFIG={
               "draw_lidar":True,
               "draw_grid":True,
               "draw_traceline":False,
-              "print_map": True
+              "print_map": False
              }
 }
