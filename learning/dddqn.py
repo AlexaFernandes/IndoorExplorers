@@ -11,6 +11,7 @@ from collections import deque #needed for replay memory
 from random import sample #used to get random minibacth
 
 #TensorFlow 2.0
+import tensorflow as tf
 from tensorflow.keras.models import Model, load_model
 from tensorflow.keras.layers import Input, Dense, Conv2D, Flatten, Lambda, Add
 from tensorflow.keras.optimizers.legacy import Adam
@@ -21,6 +22,7 @@ disable_eager_execution() #Disable Eager, IMPORTANT!
 from learning.ddqqn_wrappers import * #My wrappers for the Gym Retro Environment
 from learning.ddqqn_utils import convert_frames, Now, get_latest_file #My utilities, useful re-usable functions 
 from indoor_explorers.envs.settings import DEFAULT_CONFIG as conf
+from indoor_explorers.envs.explorerConf import ExplorerConf
 
 class DDDQNAgent(object):
     def __init__(self, game, combos, time_limit=None, batch_size=32, learn_every=10, update_every=10000,
@@ -31,8 +33,10 @@ class DDDQNAgent(object):
         self.env = self.build_env(time_limit=time_limit) #retro environment
         self.num_actions = len(combos) #number of possible actions for env
         self.state_shape = self.env.observation_space.shape #env state dims
+        print(self.state_shape)
+        #self.state_shape = tf.reshape(self.env.observation_space, [self.state_shape[0],self.state_shape[1],4])
+        #self.state_shape = self.state_shape.expand_dims()
         self.state = self.reset() #initialize state
-
 
         #training
         self.batch_size=batch_size #batch size
@@ -57,13 +61,14 @@ class DDDQNAgent(object):
         #env = retro.make(game=self.game, state=retro.State.DEFAULT, scenario='scenario',
         #                 record=False, obs_type=retro.Observations.IMAGE)
         env = gym.make('indoor_explorers:exploConf-v01', conf=conf)
+        env = Custom_Env()  
         #env = Discretizer(env, combos=self.combos)
-        if time_limit is not None: env = TimeLimit(env, time_limit)
-        env = SkipFrames(env)
-        env = Rgb2Gray(env)
-        env = Downsample(env, downsampleRatio)
-        env = FrameStack(env, numStack)
-        env = ScaledFloatFrame(env)
+        # if time_limit is not None: env = TimeLimit(env, time_limit)
+        # env = SkipFrames(env)
+        # env = Rgb2Gray(env)
+        # env = Downsample(env, downsampleRatio)
+        # env = FrameStack(env, numStack)
+        # env = ScaledFloatFrame(env)
         return env
 
     

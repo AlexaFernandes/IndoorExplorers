@@ -9,6 +9,7 @@ from indoor_explorers.envs.settings import DEFAULT_CONFIG
 import gym
 from gym import error, spaces, utils
 from gym.utils import seeding
+import cv2
 
 class ExplorerConf(gym.Env):
     metadata = {'render.modes': ['rgb_array'],
@@ -80,7 +81,7 @@ class ExplorerConf(gym.Env):
         self.outputMap = self.exploredMap.copy()
         self.outputMap[self.x, self.y] = 0.6
 
-        self.new_state = np.reshape(self.outputMap, (self.sizeX, self.sizeY,1))
+        self.new_state = np.reshape(self.outputMap, (self.sizeX, self.sizeY,1)) #cv2.cvtColor(self.outputMap, cv2.COLOR_RGB2BGR)
         self.reward = 0
         self.done = False
 
@@ -171,7 +172,7 @@ class ExplorerConf(gym.Env):
 
         self.outputMap = self.exploredMap.copy()
         self.outputMap[self.x, self.y] = 0.6
-        self.new_state = np.reshape(self.outputMap, (self.sizeX, self.sizeY,1))
+        self.new_state = np.reshape(self.outputMap, (self.sizeX, self.sizeY,1))#cv2.cvtColor(self.outputMap, cv2.COLOR_RGB2BGR)
         self.timeStep += 1
 
 
