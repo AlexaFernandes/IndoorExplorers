@@ -8,23 +8,24 @@ import matplotlib.pyplot as plt
 import json
 import pickle as p
 
-from indoor_explorers.envs.settings import DEFAULT_CONFIG as conf
+from mars_explorer.envs.settings import DEFAULT_CONFIG as conf
 
-N_GAMES = 5
+N_GAMES = 30
 N_STEPS = 3000
 DELAY = 0.
 EPSILON = 0.65
-RENDER_ACTIVE = False
-CONF_PATH = "params.json"
+RENDER_ACTIVE = True
+CONF_PATH = "/home/thedarkcurls/IndoorExplorers/non-learning/params.json"
 
-def get_conf():
+def get_conf(conf_file):
 
     if CONF_PATH != "":
         conf_json = json.load(open(CONF_PATH,'r'))
         conf = conf_json["env_config"]
         conf["margins"] = [3,3]
     else:
-        conf["size"] = [84, 84]
+        conf=conf_file
+        conf["size"] = [42, 42]
         # conf["obstacles"] = 20
         # conf["lidar_range"] = 4
         # conf["obstacle_size"] = [1,3]
@@ -98,7 +99,7 @@ def get_action(obs):
 
     return np.argmin(evaluate_actions)
 
-
+#TODO change for multi agents!
 def play_game(env):
 
     exploration_rate = []
@@ -123,7 +124,7 @@ def play_game(env):
 
 
 if __name__ == "__main__":
-    conf = get_conf()
+    conf = get_conf(conf_file=conf)
 
     env = gym.make('mars_explorer:exploConf-v01', conf=conf)
 
@@ -134,4 +135,4 @@ if __name__ == "__main__":
         exploration_rate = play_game(env)
         data.append(exploration_rate)
 
-    p.dump( data, open("utility_42x42.p","wb"))
+    p.dump( data, open("random_42x42.p","wb"))
