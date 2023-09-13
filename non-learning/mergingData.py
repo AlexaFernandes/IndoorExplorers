@@ -11,14 +11,14 @@ plotstyle="ggplot"
 plt.style.use(f"{plotstyle}")
 
 
-#CASES = [["utility_42x42.p", "Area 42x42", "Utility [8]"],
-        #  ["cost_42x42.p", "Area 42x42", "Cost [8]"],
-        #  ["ppo_42x42.p", "Area 42x42", "PPO [22]"],
-        #  ["utility_84x84.p", "Area 84x84", "Utility [8]"],
-        #  ["cost_84x84.p", "Area 84x84", "Cost [8]"],
-        #  ["ppo_84x84.p", "Area 84x84", "PPO [22]"]]
+CASES = [["utility_42x42.p", "Area 42x42", "Utility [8]"],
+         ["cost_42x42.p", "Area 42x42", "Cost [8]"],
+         #["ppo_42x42.p", "Area 42x42", "PPO [22]"],
+         #["utility_84x84.p", "Area 84x84", "Utility [8]"],
+         #["cost_84x84.p", "Area 84x84", "Cost [8]"]],
+         #["ppo_84x84.p", "Area 84x84", "PPO [22]"]
+         ]
 
-CASES = [["cost_84x84.p", "Area 84x84", "Cost [8]"]] #temporary CASES bc I don't have the others
 
 if __name__ == "__main__":
 

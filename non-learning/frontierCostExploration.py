@@ -8,13 +8,12 @@ import matplotlib.pyplot as plt
 import json
 import pickle as p
 
-from indoor_explorers.envs.settings import DEFAULT_CONFIG as conf
+from mars_explorer.envs.settings import DEFAULT_CONFIG as conf
 
 N_GAMES = 30
 N_STEPS = 3000
 DELAY = 0.
-RENDER_ACTIVE = False
-RENDER_GRID = False
+RENDER_ACTIVE = True
 CONF_PATH = "/home/thedarkcurls/IndoorExplorers/non-learning/params.json"
 
 
@@ -96,6 +95,7 @@ def get_action(obs):
     return np.argmin(evaluate_actions)
 
 
+#TODO change for multi agents!
 def play_game(env):
 
     exploration_rate = []
@@ -106,7 +106,7 @@ def play_game(env):
 
         action = get_action(obs)
 
-        obs, reward, done, info = env.step(action,RENDER_GRID)
+        obs, reward, done, info = env.step(action)
 
         exploration_rate.append(np.count_nonzero(obs)/(obs.shape[0]*obs.shape[1]))
 
@@ -122,7 +122,7 @@ def play_game(env):
 if __name__ == "__main__":
     conf = get_conf()
 
-    env = gym.make('indoor_explorers:exploConf-v01', conf=conf)
+    env = gym.make('mars_explorer:exploConf-v01', conf=conf)
 
     data = []
     for game in range(N_GAMES):
@@ -131,4 +131,4 @@ if __name__ == "__main__":
         exploration_rate = play_game(env)
         data.append(exploration_rate)
 
-    p.dump( data, open("cost_84x84.p","wb"))
+    p.dump( data, open("cost_42x42.p","wb"))

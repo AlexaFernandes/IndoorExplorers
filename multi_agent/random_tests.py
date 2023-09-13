@@ -115,7 +115,7 @@ if __name__ == "__main__":
     #value = agents[0].does_wall_exists()
     #print(value)
 
-    print(check_who_in_comm_range(agents,3))
+    #rint(check_who_in_comm_range(agents,3))
 
 
    
@@ -135,11 +135,14 @@ if __name__ == "__main__":
 
 
     #-----------------------------------------------------------
-    # mat1 =np.array([ [1.0, 0.3, 0.0 , 0.0],
-    #                       [0.3, 0.3, 0.0, 0.0 ],
-    #                       [0.0, 0.0, 0.0, 0.0],
-    #                       [0.0, 0.0, 0.0, 0.0]
-    #             ])
+    mat1 =np.array([[1.0, 0.3, 0.0 , 0.0],
+                    [0.3, 0.3, 0.0, 0.0 ],
+                    [0.0, 0.0, 0.0, 2.0],
+                    [0.0, 0.0, 0.0, 0.0]
+                ])
+
+    free_x, free_y = np.where(mat1 == 0.3)
+    print(free_x,free_y)#, free_z)
 
     # mat2 =np.array([ [0.0, 0.0, 0.3 , 2.0],
     #                  [0.0, 0.0, 4.0, 0.3 ],

@@ -8,13 +8,13 @@ import matplotlib.pyplot as plt
 import json
 import pickle as p
 
-from indoor_explorers.envs.settings import DEFAULT_CONFIG as conf
+from mars_explorer.envs.settings import DEFAULT_CONFIG as conf
 
 N_GAMES = 2
 N_STEPS = 3000
 DELAY = 0.
 RENDER_ACTIVE = True
-CONF_PATH = "params.json"
+CONF_PATH = "/home/thedarkcurls/IndoorExplorers/non-learning/params.json"
 
 
 def get_conf():
@@ -37,7 +37,7 @@ def get_conf():
 
 def find_frontiers(obs):
 
-    free_x, free_y, free_z = np.where(obs == 0.3)
+    free_x, free_y, free_z = np.where(obs == 0.3) #free_z is necessary bc the obervation space as shape (size_x, size_y, 1)
     free_points = np.array(list(zip(free_x, free_y)))
 
     # diff --> temporal differences
