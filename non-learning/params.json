@@ -16,12 +16,14 @@
   "entropy_coeff_schedule": null,
   "env": null,
   "env_config": {
+        "n_agents": 4,
+        "initial":  [ [0,0],
+                      [0,20],
+                      [20,0],
+                      [20,20]
+                    ],
         "bonus_reward": 0,
         "collision_reward": -50,
-        "initial": [
-          0,
-          0
-        ],
         "lidar_channels": 32,
         "lidar_range": 6,
         "margins": [
@@ -43,8 +45,8 @@
         "obstacles": 12,
         "out_of_bounds_reward": -50,
         "size": [
-          42,
-          42
+          21,
+          21
         ],
         "viewer": {
           "background_img": "/home/thedarkcurls/GeneralExplorationPolicy/mars-explorer/img/wood_floor.jpg",
@@ -61,7 +63,8 @@
           ],
           "obstacle_img": "/home/thedarkcurls/GeneralExplorationPolicy/mars-explorer/img/stone_black2.png",
           "title": "Mars-Explorer-V01",
-          "width": 630
+          "width": 630,
+          "print_map": false
         },
         "viwer": {
           "height": 840,

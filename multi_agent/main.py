@@ -36,12 +36,13 @@ if __name__ == '__main__':
         env.seed(ep_i)
         obs_n = env.reset()
         env.render()
+        #print(env.agents[0].pos)
 
         while not all(done_n):
             action_n = env.action_space.sample() #insert policy, in out case dddqn()
-            print(Fore.RED) 
-            print(action_n)
-            print(Style.RESET_ALL)
+            # print(Fore.RED) 
+            # print(action_n)
+            # print(Style.RESET_ALL)
             obs_n, reward_n, done_n, info = env.step(action_n)
             ep_reward += sum(reward_n)
             env.render()

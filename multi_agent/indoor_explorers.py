@@ -80,11 +80,16 @@ class IndoorExplorers(gym.Env):
         #lowest value that can be observed in each cell is 0.0
         self._obs_low = np.full(self._grid_shape,np.array(0.0, dtype=np.float32))
         self.observation_space = MultiAgentObservationSpace(
-            [spaces.Box(self._obs_low, self._obs_high, self._grid_shape) for _ in range(self.n_agents)])
+            [spaces.Box(self._obs_low, self._obs_high, self._grid_shape) for _ in range(self.n_agents)]) #one map for each agent  (+ 1 (_full_obs)??)
 
         self._total_episode_reward = None
         self.seed()
 
+    def get_grid_shape(self):
+        return self._grid_shape
+
+    def get_full_obs(self):
+        return self._full_obs
 
     #checks if is a wall in pos
     def does_wall_exists(self, pos):
@@ -460,6 +465,8 @@ class IndoorExplorers(gym.Env):
             else:
                 fill_cell(img, self.agents[agent_i].pos, cell_size=CELL_SIZE, fill='white')
             draw_cell_outline(img, self.agents[agent_i].pos, cell_size=CELL_SIZE, fill='black',width=1)
+            
+        for agent_i in range(self.n_agents):
             draw_circle(img, self.agents[agent_i].pos, cell_size=CELL_SIZE, fill=self.agents[agent_i].color)
             write_cell_text(img, text=str(agent_i + 1), pos=self.agents[agent_i].pos, cell_size=CELL_SIZE,
                             fill='white', margin=0.4)  
@@ -529,6 +536,7 @@ class IndoorExplorers(gym.Env):
         # if self.full_observable:
         #     _obs = np.array(_obs).flatten().tolist()
         #     _obs = [_obs for _ in range(self.n_agents)]
+        #_obs.append(_full_obs)
         return _obs
 
     def get_agents_dones(self):
