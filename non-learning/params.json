@@ -26,6 +26,7 @@
         "collision_reward": -50,
         "lidar_channels": 32,
         "lidar_range": 6,
+        "comm_range": 6.0,
         "margins": [
           1,
           1

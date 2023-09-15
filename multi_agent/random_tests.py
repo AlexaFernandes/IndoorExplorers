@@ -38,7 +38,7 @@ class Agent(object):
         dist = np.sqrt(np.sum(np.square(delta_pos)))
         #print(delta_pos)
 
-        if delta_pos[0] > self.c_range and delta_pos[1] > self.c_range :
+        if delta_pos[0] > self.c_range or delta_pos[1] > self.c_range :
             return False
         else:
             return True
@@ -67,24 +67,82 @@ def merge_maps(maps, agent_list):
         #     self.agents[agent_i].exploredMap = new_merged_map.copy()
         return new_merged_map
 
-def check_who_in_comm_range(agents, n_agents):
+def update_comm_range(agents, n_agents):
     l = []
     l.extend(range(0, n_agents))
     #generate a list with all the unique pairings among all agents
     combinations = list(itertools.combinations(l, 2))
     in_range = []
+    comm_range = np.full((n_agents,n_agents), False)
 
     #print(combinations)
     #check for collisions between any 2 agents
     for pair in combinations:
         if agents[pair[0]].in_range(agents[pair[1]]) == True:
             in_range.append(pair)
-        
+            comm_range[pair[0]][pair[1]] = comm_range[pair[1]][pair[0]] = 1 
+        else:
+            comm_range[pair[0]][pair[1]] = comm_range[pair[1]][pair[0]] = 0
+
     #return list of agents in range
-    return in_range
+    return comm_range #,in_range 
+
+
+    def DFSUtil(matrix, temp, agent_i, visited, n_agents):
+ 
+        # Mark the current vertex as visited
+        visited[agent_i] = True
+
+        # Store the vertex to list
+        temp.append(agent_i)
+
+        # Repeat for all vertices adjacent
+        # to this vertex v
+        for j in range(0, n_agents):
+            #go through the upper triangular matrix (since the matrix is simmetric, we olny need to go through one of the triangular matrices)
+            if (agent_i < j):
+                if matrix[agent_i][j] == 1: #if they are connected
+                    if visited[j] == False:
+                        # Update the list
+                        temp = DFSUtil(matrix,temp, j, visited, n_agents)
+                    
+        return temp
+
+
+def DFSUtil(matrix, temp, v, visited, n_agents):
+ 
+    # Mark the current vertex as visited
+    visited[v] = True
+
+    # Store the vertex to list
+    temp.append(v)
+
+    # Repeat for all vertices adjacent
+    # to this vertex v
+    for j in range(0,n_agents):
+        #go through the upper triangular matrix (since the matrix is simmetric, we olny need to go through one of the triangular matrices)
+        if (v < j):
+            if matrix[v][j] == 1: #if they are connected
+                if visited[j] == False:
+                    # Update the list
+                    temp = DFSUtil(matrix,temp, j, visited, n_agents)
+                
+    return temp
+
+
+def connectedComponents(matrix, n_agents):
+    visited = []
+    cc = []
+    for i in range(n_agents):
+        visited.append(False)
+    for agent_i in range(n_agents):
+        if visited[agent_i] == False:
+            temp = []
+            cc.append(DFSUtil(matrix, temp, agent_i, visited, n_agents))
+    return cc
 
 if __name__ == "__main__":
-    agents = [Agent() for i in range(3)]
+    agents = [Agent() for i in range(4)]
     for i, agent in enumerate(agents):
         agent.name = 'agent %d' % i
         agent.id = i
@@ -103,10 +161,10 @@ if __name__ == "__main__":
     #                   [1.0, 0.3, 0.3]
     #                   ]       
     
-    # for agent_i in range (3):
+    # for agent_i in range (4):
     #     print("{} is in {}".format(agents[agent_i].id, agents[agent_i].pos))
-    #     agents[agent_i].pos = [0,0]
-    #     print("{} is in {}".format(agents[agent_i].id, agents[agent_i].pos))
+        # agents[agent_i].pos = [0,0]
+        # print("{} is in {}".format(agents[agent_i].id, agents[agent_i].pos))
 
     # print(groundTruthMap)
     # print("{}".format([1.0 in groundTruthMap]))
@@ -114,9 +172,6 @@ if __name__ == "__main__":
 
     #value = agents[0].does_wall_exists()
     #print(value)
-
-    #rint(check_who_in_comm_range(agents,3))
-
 
    
     # print((_full_obs==groundTruthMap).all())
@@ -142,7 +197,7 @@ if __name__ == "__main__":
                 ])
 
     free_x, free_y = np.where(mat1 == 0.3)
-    print(free_x,free_y)#, free_z)
+    #print(free_x,free_y)#, free_z)
 
     # mat2 =np.array([ [0.0, 0.0, 0.3 , 2.0],
     #                  [0.0, 0.0, 4.0, 0.3 ],
@@ -178,7 +233,7 @@ if __name__ == "__main__":
     
     
 
-
+    
 
 
 
@@ -193,5 +248,33 @@ if __name__ == "__main__":
     #         else:
     #             print("A"+str(_full_obs[row][col]))
     #print("{}".format(get_agents_dones()))
-        
+
+
+
+    #------------------------------------------------
+    #test connectivity:
+    matrix =  [ [0, 1, 0, 0],
+                [1, 0, 1, 0],
+                [0, 1, 0, 1],
+                [0, 0, 1, 0]
+                ]
+    
+    matrix2 =  [[0, 0, 0, 0],
+                [0, 0, 0, 0],
+                [0, 0, 0, 1],
+                [0, 0, 1, 0]
+                ]
+
+    matrix3=  [ [0, 1, 0, 0],
+                [1, 0, 0, 1],
+                [0, 0, 0, 0],
+                [0, 1, 0, 0]
+                ]
+
+
+    comm_range = update_comm_range(agents,4)
+    
+    groups = connectedComponents(matrix2,n_agents=4)
+    for group in groups:
+        print(group)
     

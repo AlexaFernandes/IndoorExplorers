@@ -42,6 +42,9 @@ DEFAULT_CONFIG={
     "lidar_range":6,
     "lidar_channels":32,
 
+    # ======== COMMUNICATION =======
+    "comm_range": 10.0,
+
     # ======== VIEWER =========
     "viewer":{"width":21*30,
               "height":21*30,
@@ -54,6 +57,6 @@ DEFAULT_CONFIG={
               "draw_lidar":True,
               "draw_grid":True,
               "draw_traceline":False,
-              "print_map": False
+              "print_map": True
              }
 }

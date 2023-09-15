@@ -65,7 +65,8 @@ class IndoorExplorers(gym.Env):
                                                                           #               0.3 free to move
                                                                           #               0.0 unexplored
                                                                           #               >1  agent id
-        
+        #matrix that tells which agents are in range of each
+        self.comm_range = np.full((self.n_agents,self.n_agents), 0)
 
         self.viewer = None
         self.full_observable = full_observable
@@ -111,7 +112,7 @@ class IndoorExplorers(gym.Env):
 
     #receives a list of agents that are in comm range that want to merge their maps
     def merge_maps(self, agent_list):
-        new_merged_map = np.array.full(self._grid_shape, 0.0)
+        new_merged_map = np.full(self._grid_shape, 0.0)
 
         for col in range(0, self._grid_shape[1]):
             for row in range(0, self._grid_shape[0]):
@@ -127,19 +128,54 @@ class IndoorExplorers(gym.Env):
         # else:  
 
     #se calhar faria mais sentido a partir de um certo agent quem está in range
-    def check_who_in_comm_range(self):
+    def update_comm_range(self):
         l = []
         l.extend(range(0, self.n_agents))
         #generate a list with all the unique pairings among all agents
         combinations = list(itertools.combinations(l, 2))
+        #in_range = []
+        self.comm_range = np.zeros((self.n_agents,self.n_agents))
 
-        #check for collisions between any 2 agents
+        #print(combinations)
+        #check if any 2 agents are in comms range and save in the comms matrix
         for pair in combinations:
             if self.agents[pair[0]].in_range(self.agents[pair[1]]) == True:
-                in_range.append(pair)
-            
-        #return list of pairs of agents in range of eachother
-        return in_range
+                print(pair)
+                #in_range.append(pair)
+                self.comm_range[pair[0]][pair[1]] = self.comm_range[pair[1]][pair[0]] = 1 
+            else:
+                self.comm_range[pair[0]][pair[1]] = self.comm_range[pair[1]][pair[0]] = 0
+
+    def DFSUtil(self, temp, agent_i, visited):
+ 
+        # Mark the current vertex as visited
+        visited[agent_i] = True
+
+        # Store the vertex to list
+        temp.append(agent_i)
+
+        # Repeat for all vertices adjacent
+        # to this vertex v
+        for j in range(0, self.n_agents):
+            #go through the upper triangular matrix (since the matrix is simmetric, we olny need to go through one of the triangular matrices)
+            if (agent_i < j):
+                if self.comm_range[agent_i][j] == 1: #if they are connected
+                    if visited[j] == False:
+                        # Update the list
+                        temp = self.DFSUtil(temp, j, visited)
+                    
+        return temp
+
+    def connectedComponents(self):
+        visited = []
+        cc = []
+        for i in range(self.n_agents):
+            visited.append(False)
+        for agent_i in range(self.n_agents):
+            if visited[agent_i] == False:
+                temp = []
+                cc.append(self.DFSUtil(temp, agent_i, visited))
+        return cc
 
     def check_who_in_comm_range_of(agent_i, self):
         l = []
@@ -205,6 +241,9 @@ class IndoorExplorers(gym.Env):
 
         #update every agent's explored map and _full_obs
         self._updateMaps()
+
+        #update comms matrix
+        self.update_comm_range()
 
 
     def __update_agent_pos(self, agent_i, move):
@@ -357,6 +396,7 @@ class IndoorExplorers(gym.Env):
         self._total_episode_reward = [0 for _ in range(self.n_agents)]
         #old: self.agent_pos = {} -> done in reset_agents() below
         self.reset_agents() 
+        self.comm_range = np.zeros((self.n_agents,self.n_agents))
 
         #criar novo mapa e dá spawn de novo dos agents
         #cria lidares novos (isto inclui criar novos obstaulos) com base no novo mapa
@@ -378,10 +418,15 @@ class IndoorExplorers(gym.Env):
             "Call reset before using step method."
 
         self._step_count += 1
+        print(self.comm_range)
         
-        #apply chosen action
+        #apply chosen action and communicate maps
         for agent_i, action in enumerate(agents_action):
             if not (self.agents[agent_i].done): #_agent_dones[agent_i]):
+                #check if they are in comm range and then change info
+                groups_in_range = self.connectedComponents()
+                for group in groups_in_range:
+                    self.merge_maps(group)
                 self.__update_agent_pos(agent_i, action)
         
         #compute rewards for each agent 
@@ -482,7 +527,8 @@ class IndoorExplorers(gym.Env):
             #este print tem que ser depois de atualizar o viewer pq senão acontece aquele comportamento estranho em que o viewer parece estar atrasado
             #mas simplesmente não foi renderizado depois de ter os dados atualizados
             if self.conf["viewer"]["print_map"] == True:
-                printMap(self._full_obs, self.n_agents)
+                #printMap(self._full_obs, self.n_agents)
+                printAgentsMaps(self.agents, self.n_agents)
             return self.viewer.isopen
 
     def seed(self, n=None):
@@ -511,7 +557,8 @@ class IndoorExplorers(gym.Env):
             self.agents[agent_i].done = False
             self.agents[agent_i].pos = None
             self.agents[agent_i].collision = False
-            self.agents[agent_i].out_of_bounds = False  
+            self.agents[agent_i].out_of_bounds = False 
+            self.agents[agent_i].c_range = self.conf["comm_range"]
             #TODO ver o que mais é preciso dar reset??
     
     #CONFIRMAR! alterar para: um agent vê o seu explored map basicamente
@@ -597,8 +644,7 @@ class Agent(object):
     #it's considered in range, inside a square with distance of c_range squares around the agent
     def in_range(self, agent2):
         delta_pos = abs(np.subtract(np.array(self.pos), np.array(agent2.pos)) ) 
-
-        if delta_pos[0] > self.c_range and delta_pos[1] > self.c_range :
+        if delta_pos[0] > self.c_range or delta_pos[1] > self.c_range :
             return False
         else:
             return True
