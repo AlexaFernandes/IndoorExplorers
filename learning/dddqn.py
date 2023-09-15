@@ -61,7 +61,7 @@ class DDDQNAgent(object):
         #env = retro.make(game=self.game, state=retro.State.DEFAULT, scenario='scenario',
         #                 record=False, obs_type=retro.Observations.IMAGE)
         env = gym.make('indoor_explorers:exploConf-v01', conf=conf)
-        env = Custom_Env()  
+        #env = ExplorerConfs()  
         #env = Discretizer(env, combos=self.combos)
         # if time_limit is not None: env = TimeLimit(env, time_limit)
         # env = SkipFrames(env)
