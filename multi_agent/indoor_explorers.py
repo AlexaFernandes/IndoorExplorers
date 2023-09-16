@@ -117,8 +117,20 @@ class IndoorExplorers(gym.Env):
         for col in range(0, self._grid_shape[1]):
             for row in range(0, self._grid_shape[0]):
                 for agent_i in agent_list:
-                    if self.agents[agent_i].exploredMap[row][col] != 0.0:
+                    #save if it is a wall or explored cell
+                    if self.agents[agent_i].exploredMap[row][col] == 0.5 or self.agents[agent_i].exploredMap[row][col] == 0.3:
                         new_merged_map[row][col]= self.agents[agent_i].exploredMap[row][col]
+                    #if it was an agent, check if it is still in range
+                    elif self.agents[agent_i].pastExploredMap[row][col] >= 1.0:
+                        #check if the agent is still in range
+                        if (self.agents[agent_i].pastExploredMap[row][col]-1) not in agent_list:
+                            print("{} out of range of {}".format(self.agents[agent_i].pastExploredMap[row][col]-1, agent_i))
+                            new_merged_map[row][col] = 0.3
+        
+        #save the positions of all agents in range in the end, so their position isn't lost
+        for agent_i in agent_list:
+            agent_pos = self.agents[agent_i].pos
+            new_merged_map[agent_pos[0]][agent_pos[1]] = agent_i + 1
 
         #save a copy of the new map (it needs to be a copy otherwise they will have all the same reference and will be changing the same object)
         for agent_i in agent_list:
@@ -134,13 +146,13 @@ class IndoorExplorers(gym.Env):
         #generate a list with all the unique pairings among all agents
         combinations = list(itertools.combinations(l, 2))
         #in_range = []
-        self.comm_range = np.zeros((self.n_agents,self.n_agents))
+        self.comm_range = np.full((self.n_agents,self.n_agents),0)
 
         #print(combinations)
         #check if any 2 agents are in comms range and save in the comms matrix
         for pair in combinations:
             if self.agents[pair[0]].in_range(self.agents[pair[1]]) == True:
-                print(pair)
+                #print(pair)
                 #in_range.append(pair)
                 self.comm_range[pair[0]][pair[1]] = self.comm_range[pair[1]][pair[0]] = 1 
             else:
@@ -244,6 +256,7 @@ class IndoorExplorers(gym.Env):
 
         #update comms matrix
         self.update_comm_range()
+        print(self.comm_range)
 
 
     def __update_agent_pos(self, agent_i, move):
@@ -320,7 +333,7 @@ class IndoorExplorers(gym.Env):
     def _updateMaps(self):
 
         for agent_i in range(self.n_agents):
-            self.agents[agent_i].pastExploredMaps = self.agents[agent_i].exploredMap.copy()
+            self.agents[agent_i].pastExploredMap = self.agents[agent_i].exploredMap.copy()
 
             lidarX= self.lidarsIndexes[agent_i][:,0]
             lidarY = self.lidarsIndexes[agent_i][:,1]
@@ -379,13 +392,8 @@ class IndoorExplorers(gym.Env):
             #reset spawn flag
             random_spawn=RANDOM_SPAWN
         
-        #this replaces the two commented lines (activateLidar + _updateMaps)
+        #this replaces the two commented lines (activateLidar + _updateMaps + update_comms)
         self.__update_agents_view()
-        # # initial position is explored
-        # self._activateLidars()
-
-        # #update everyone's explored maps
-        # self._updateMaps()
 
         #create grid for later render
         self.__draw_base_img()
@@ -396,12 +404,12 @@ class IndoorExplorers(gym.Env):
         self._total_episode_reward = [0 for _ in range(self.n_agents)]
         #old: self.agent_pos = {} -> done in reset_agents() below
         self.reset_agents() 
-        self.comm_range = np.zeros((self.n_agents,self.n_agents))
+        self.comm_range = np.full((self.n_agents,self.n_agents), 0)
 
         #criar novo mapa e dá spawn de novo dos agents
         #cria lidares novos (isto inclui criar novos obstaulos) com base no novo mapa
         #activa os lidars e dá update dos explored maps de cada um 
-        #com base no que cada um consegue ver
+        #com base no que cada um consegue ver e na matrix de comms
         self.__init_full_obs()
 
 
@@ -418,15 +426,17 @@ class IndoorExplorers(gym.Env):
             "Call reset before using step method."
 
         self._step_count += 1
-        print(self.comm_range)
         
-        #apply chosen action and communicate maps
+        #communicate maps
+        #check if they are in comm range and then change info
+        groups_in_range = self.connectedComponents()
+        print("groups in range: {}".format(groups_in_range))
+        for group in groups_in_range:
+            self.merge_maps(group)
+
+        #apply chosen action 
         for agent_i, action in enumerate(agents_action):
             if not (self.agents[agent_i].done): #_agent_dones[agent_i]):
-                #check if they are in comm range and then change info
-                groups_in_range = self.connectedComponents()
-                for group in groups_in_range:
-                    self.merge_maps(group)
                 self.__update_agent_pos(agent_i, action)
         
         #compute rewards for each agent 
@@ -515,6 +525,7 @@ class IndoorExplorers(gym.Env):
             draw_circle(img, self.agents[agent_i].pos, cell_size=CELL_SIZE, fill=self.agents[agent_i].color)
             write_cell_text(img, text=str(agent_i + 1), pos=self.agents[agent_i].pos, cell_size=CELL_SIZE,
                             fill='white', margin=0.4)  
+            draw_square_outline(img, self.agents[agent_i].pos, self.agents[agent_i].c_range, cell_size=CELL_SIZE, fill=self.agents[agent_i].color, width = 3)
             
         img = np.asarray(img)
         if mode == 'rgb_array':
@@ -644,7 +655,8 @@ class Agent(object):
     #it's considered in range, inside a square with distance of c_range squares around the agent
     def in_range(self, agent2):
         delta_pos = abs(np.subtract(np.array(self.pos), np.array(agent2.pos)) ) 
-        if delta_pos[0] > self.c_range or delta_pos[1] > self.c_range :
+        #print(delta_pos)
+        if delta_pos[0] >= self.c_range*2 or delta_pos[1] >= self.c_range*2 :
             return False
         else:
             return True

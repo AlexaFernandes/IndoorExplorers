@@ -3,6 +3,7 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 from matplotlib.colors import ListedColormap
 import matplotlib.patches as mpatches
+from matplotlib.ticker import AutoMinorLocator, IndexLocator, MultipleLocator
 
 
 
@@ -187,22 +188,29 @@ def printAgentsMaps(agents, n_agents):
         if 0.5 in matrix: #if an obstacle as been found the colormap should include the color blue and the colorbar should be accordingly
             pos=ax[agent_i].imshow(data_3d,cmap=cmap4) #outra alternativa é o matshow, mas assim o titulo nao aparece
 
-            #patches = [mpatches.Patch(color=colors1[i], label=labels1[i] ) for i in range(len(values)) ]
-            patches = [mpatches.Patch(color=colors1[x], label=labels1[x] ) for x in range(n_agents+3) ]
-            
-            # put those patched as legend-handles into the legend
-            plt.legend(handles=patches, bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0. )
-
         else:
             pos=ax[agent_i].imshow(data_3d,cmap=cmap5) #outra alternativa é o matshow, mas assim o titulo nao aparece
 
-            patches = [ mpatches.Patch(color=colors1[i], label=labels2[i] ) for i in range(n_agents+2)  ]
-            # put those patched as legend-handles into the legend
-            plt.legend(handles=patches, bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0. )
+        # for i in range(matrix.shape[1]): #collumns
+        #     for j in range(matrix.shape[0]): #rows
+        #         c = matrix[j,i]
+        #         ax[agent_i].text(i, j, str("%.1f"%c), va='center', ha='center')
 
-    #adding grid lines
-    plt.hlines(y=np.arange(0, grid_shape[1])+0.5, xmin=np.full(grid_shape[1], 0)-0.5, xmax=np.full(grid_shape[1], grid_shape[1])-0.5, color="grey")
-    plt.vlines(x=np.arange(0, grid_shape[0])+0.5, ymin=np.full(grid_shape[0], 0)-0.5, ymax=np.full(grid_shape[0], grid_shape[0])-0.5, color="grey")
+        #adding grid lines
+        # Set minor ticks/gridline cadence
+        ax[agent_i].yaxis.set_minor_locator(IndexLocator(base=1.0, offset=0.0))
+        ax[agent_i].xaxis.set_minor_locator(IndexLocator(base=1.0, offset=0.0))
+        ax[agent_i].grid(which = "minor", linewidth=1.4)
+        #change tick color to white
+        ax[agent_i].tick_params(which = "minor" ,axis='both', colors='white')
+
+        ax[agent_i].yaxis.set_major_locator(IndexLocator(base=1.0, offset=0.5))
+        ax[agent_i].xaxis.set_major_locator(IndexLocator(base=1.0, offset=0.5))
+
+    patches = [mpatches.Patch(color=colors1[x], label=labels1[x] ) for x in range(n_agents+3) ]
+    
+    # put those patched as legend-handles into the legend
+    plt.legend(handles=patches, bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0. )
 
     
     plt.show()
