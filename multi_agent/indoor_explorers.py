@@ -445,7 +445,7 @@ class IndoorExplorers(gym.Env):
             if not (self.agents[agent_i].done): #_agent_dones[agent_i]):
                 self.__update_agent_pos(agent_i, action)
 
-        print(self.comm_range)
+        #print(self.comm_range)
 
         #communicate maps
         #check if they are in comm range and then change info
