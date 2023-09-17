@@ -265,16 +265,18 @@ if __name__ == "__main__":
                 [0, 0, 1, 0]
                 ]
 
-    matrix3=  [ [0, 1, 0, 0],
-                [1, 0, 0, 1],
-                [0, 0, 0, 0],
-                [0, 1, 0, 0]
-                ]
-
-
+    matrix3=  np.array([ [0, 1, 1, 1],
+                         [1, 0, 0, 0],
+                         [1, 0, 0, 0],
+                         [1, 0, 0, 0]
+                         ])
+    mat=matrix3         
+    print(mat)
     comm_range = update_comm_range(agents,4)
     
-    groups = connectedComponents(matrix2,n_agents=4)
+    print("Groups:")
+    groups=[]
+    groups = connectedComponents(mat,n_agents=4)
     for group in groups:
         print(group)
     

@@ -43,7 +43,7 @@ DEFAULT_CONFIG={
     "lidar_channels":32,
 
     # ======== COMMUNICATION =======
-    "comm_range": 10.0,
+    "comm_range": 6.0,
 
     # ======== VIEWER =========
     "viewer":{"width":21*30,

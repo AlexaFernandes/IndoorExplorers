@@ -16,6 +16,13 @@ from multi_agent.indoor_explorers import IndoorExplorers
 
 from ma_gym.wrappers import Monitor
 
+ACTION_MEANING = {
+    0: "DOWN",
+    1: "LEFT",
+    2: "UP",
+    3: "RIGHT",
+    4: "NOOP",
+}
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Random Agent for indoor-explorers')
@@ -40,9 +47,10 @@ if __name__ == '__main__':
 
         while not all(done_n):
             action_n = env.action_space.sample() #insert policy, in out case dddqn()
-            # print(Fore.RED) 
-            # print(action_n)
-            # print(Style.RESET_ALL)
+            #print(Fore.RED) 
+            #print(action_n)
+            print("\u001b[34m {}\u001b[34m,\033[91m {}\033[00m,\u001b[32m {}\u001b[32m,\u001b[33m {}\u001b[33m" .format(ACTION_MEANING[action_n[0]], ACTION_MEANING[action_n[1]],ACTION_MEANING[action_n[2]],ACTION_MEANING[action_n[3]]))
+            print(Style.RESET_ALL)
             obs_n, reward_n, done_n, info = env.step(action_n)
             ep_reward += sum(reward_n)
             env.render()

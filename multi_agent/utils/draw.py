@@ -97,7 +97,7 @@ def draw_square_outline(image, pos, _range, cell_size=50, fill='black', width = 
     cell_size_x, cell_size_y = get_cell_sizes(cell_size)
     col, row = pos
     row, col = row * cell_size_x, col * cell_size_y
-    ImageDraw.Draw(image).rectangle([(row-cell_size_x*_range, col-cell_size_y*_range), (row+cell_size_x*_range, col+cell_size_y*_range)], outline=fill, width=width)
+    ImageDraw.Draw(image).rectangle([(row-cell_size_x*_range, col-cell_size_y*_range), (row+cell_size_x*(_range+1), col+cell_size_y*(_range+1))], outline=fill, width=width)
 
 
 def draw_circle(image, pos, cell_size=50, fill='black', radius=0.2):

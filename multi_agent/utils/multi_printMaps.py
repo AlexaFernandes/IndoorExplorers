@@ -11,16 +11,16 @@ from matplotlib.ticker import AutoMinorLocator, IndexLocator, MultipleLocator
 color_map = {   0.0: np.array([211, 211, 211]), #lighgrey
                 0.3: np.array([255,255,255]), # white
                 0.5: np.array([0,0,0]),  
-                1.0: np.array([0, 150, 255]),# blue 
+                1.0: np.array([30, 150, 245]),# blue 
                 2.0: np.array([220, 10, 10]), #red
                 3.0: np.array([0, 204, 0]), #green
                 4.0: np.array([255, 215, 0]) #yellow
             }
 
-colors1= ["#D7D7D7","#FFFFFF","#000000","#0096FF","#E11414" ,"#00CC00","#FFD700"]
+colors1= ["#D7D7D7","#FFFFFF","#000000","#1E96F5","#E11414" ,"#00CC00","#FFD700"]
 labels1= ['unexplored','free','obstacle','UAV0','UAV1','UAV2','UAV3']
 
-colors2 = ["#D7D7D7","#FFFFFF","#0096FF","#E11414" ,"#00CC00","#FFD700"]
+colors2 = ["#D7D7D7","#FFFFFF","#1E96F5","#E11414" ,"#00CC00","#FFD700"]
 labels2= ['unexplored','free','UAV0','UAV1','UAV2','UAV3']
 
 #prints 1 square map
@@ -75,25 +75,13 @@ def printMap(matrix, n_agents):
     plt.show()
 
 
-#TODO: INCOMPLETE! grid lines not right
+#print 2 maps side by side (matrix and groundTruthM)
 def print2Map(matrix, n_agents, groundTruthMap):
-    # colors1= ["#D7D7D7","#FFFFFF","#000000","#0096FF","#E11414" ,"#00CC00","#FFD700"]
-    # labels1= ['unexplored','free','obstacle','UAV0','UAV1','UAV2','UAV3']
-
-    # colors2 = ["#D7D7D7","#FFFFFF","#0096FF","#E11414" ,"#00CC00","#FFD700"]
-    # labels2= ['unexplored','free','UAV0','UAV1','UAV2','UAV3']
-
     cmap4= ListedColormap(colors1)
     cmap5= ListedColormap(colors2)
 
     fig, ax = plt.subplots(1,2, sharex=True, sharey=True)#,figsize=(12,2))
     fig.set_tight_layout(True)
-
-
-
-    
-
-    
 
     ax[0].set_title("Updated map") #set title name
     values = np.unique(matrix.ravel())
@@ -131,8 +119,16 @@ def print2Map(matrix, n_agents, groundTruthMap):
         #     cbar.ax.text(0.8, (2 * j + 1) / 10.0, lab, ha='left', va='center')
 
     #adding grid lines
-    plt.hlines(y=np.arange(0, groundTruthMap.shape[1])+0.5, xmin=np.full(groundTruthMap.shape[1], 0)-0.5, xmax=np.full(groundTruthMap.shape[1], groundTruthMap.shape[1])-0.5, color="grey")
-    plt.vlines(x=np.arange(0, groundTruthMap.shape[0])+0.5, ymin=np.full(groundTruthMap.shape[0], 0)-0.5, ymax=np.full(groundTruthMap.shape[0], groundTruthMap.shape[0])-0.5, color="grey")
+    # Set minor ticks/gridline cadence
+    for i in range(2):
+        ax[i].yaxis.set_minor_locator(IndexLocator(base=1.0, offset=0.0))
+        ax[i].xaxis.set_minor_locator(IndexLocator(base=1.0, offset=0.0))
+        ax[i].grid(which = "minor", linewidth=1.4)
+        #change tick color to white
+        ax[i].tick_params(which = "minor" ,axis='both', colors='white')
+
+        ax[i].yaxis.set_major_locator(IndexLocator(base=1.0, offset=0.5))
+        ax[i].xaxis.set_major_locator(IndexLocator(base=1.0, offset=0.5))
 
     ax[1].set_title("Ground Truth Map") #set title name
     #values = np.unique(groundTruthMap.ravel())
@@ -157,14 +153,7 @@ def print2Map(matrix, n_agents, groundTruthMap):
     plt.show()
 
 
-
 def printAgentsMaps(agents, n_agents):
-    # colors1= ["#D7D7D7","#FFFFFF","#000000","#0096FF","#E11414" ,"#00CC00","#FFD700"]
-    # labels1= ['unexplored','free','obstacle','UAV0','UAV1','UAV2','UAV3']
-
-    # colors2 = ["#D7D7D7","#FFFFFF","#0096FF","#E11414" ,"#00CC00","#FFD700"]
-    # labels2= ['unexplored','free','UAV0','UAV1','UAV2','UAV3']
-
     cmap4= ListedColormap(colors1)
     cmap5= ListedColormap(colors2)
 
@@ -191,6 +180,7 @@ def printAgentsMaps(agents, n_agents):
         else:
             pos=ax[agent_i].imshow(data_3d,cmap=cmap5) #outra alternativa é o matshow, mas assim o titulo nao aparece
 
+        #uncomment if you want to print the values of each cell
         # for i in range(matrix.shape[1]): #collumns
         #     for j in range(matrix.shape[0]): #rows
         #         c = matrix[j,i]

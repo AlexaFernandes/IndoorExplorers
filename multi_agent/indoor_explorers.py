@@ -122,7 +122,7 @@ class IndoorExplorers(gym.Env):
                         new_merged_map[row][col]= self.agents[agent_i].exploredMap[row][col]
                     #if it was an agent, check if it is still in range
                     elif self.agents[agent_i].pastExploredMap[row][col] >= 1.0:
-                        #check if the agent is still in range
+                        #if it is not in range, mark the cell as explored/empty
                         if (self.agents[agent_i].pastExploredMap[row][col]-1) not in agent_list:
                             print("{} out of range of {}".format(self.agents[agent_i].pastExploredMap[row][col]-1, agent_i))
                             new_merged_map[row][col] = 0.3
@@ -256,7 +256,6 @@ class IndoorExplorers(gym.Env):
 
         #update comms matrix
         self.update_comm_range()
-        print(self.comm_range)
 
 
     def __update_agent_pos(self, agent_i, move):
@@ -412,12 +411,18 @@ class IndoorExplorers(gym.Env):
         #com base no que cada um consegue ver e na matrix de comms
         self.__init_full_obs()
 
+        groups_in_range = []
+        groups_in_range = self.connectedComponents()
+        print("Reset: groups in range: {}".format(groups_in_range))
+        for group in groups_in_range:
+            self.merge_maps(group)
+
 
         #repor todas as outras variaveis
         self._step_count = 0
         self._steps_beyond_done = None
         #old: _agent_dones = [False for _ in range(self.n_agents)] -> done in reset_agents a few lines up
-
+        print("reset done")
         return self.get_agents_obs()
 
     #CONFIRMAR!!
@@ -426,19 +431,31 @@ class IndoorExplorers(gym.Env):
             "Call reset before using step method."
 
         self._step_count += 1
-        
-        #communicate maps
-        #check if they are in comm range and then change info
-        groups_in_range = self.connectedComponents()
-        print("groups in range: {}".format(groups_in_range))
-        for group in groups_in_range:
-            self.merge_maps(group)
+        print("Start of step {}".format(self._step_count))
+        # #communicate maps
+        # #check if they are in comm range and then change info
+        # groups_in_range = []
+        # groups_in_range = self.connectedComponents()
+        # print("groups in range: {}".format(groups_in_range))
+        # for group in groups_in_range:
+        #     self.merge_maps(group)
 
         #apply chosen action 
         for agent_i, action in enumerate(agents_action):
             if not (self.agents[agent_i].done): #_agent_dones[agent_i]):
                 self.__update_agent_pos(agent_i, action)
-        
+
+        print(self.comm_range)
+
+        #communicate maps
+        #check if they are in comm range and then change info
+        groups_in_range = []
+        groups_in_range = self.connectedComponents()
+        print("after actions, groups in range: {}".format(groups_in_range))
+        for group in groups_in_range:
+            self.merge_maps(group)
+
+
         #compute rewards for each agent 
         rewards = [self._computeReward(agent_i) for agent_i in range(self.n_agents)]
 
@@ -471,9 +488,6 @@ class IndoorExplorers(gym.Env):
                     )
                 self._steps_beyond_done += 1
 
-        #TODO colocar na função render()?
-        # for agent in range(self.n_agents):
-        #     printMap(self.agents[agent_i].exploredMap)
 
         return self.get_agents_obs(), rewards, self.get_agents_dones(), {'other info' : None}  #_agent_dones
         #the info parameter was: {'prey_alive': self._prey_alive} in the original code, TODO see what extra indo would be useful for me
@@ -523,9 +537,9 @@ class IndoorExplorers(gym.Env):
             
         for agent_i in range(self.n_agents):
             draw_circle(img, self.agents[agent_i].pos, cell_size=CELL_SIZE, fill=self.agents[agent_i].color)
-            write_cell_text(img, text=str(agent_i + 1), pos=self.agents[agent_i].pos, cell_size=CELL_SIZE,
+            write_cell_text(img, text=str(agent_i), pos=self.agents[agent_i].pos, cell_size=CELL_SIZE,
                             fill='white', margin=0.4)  
-            draw_square_outline(img, self.agents[agent_i].pos, self.agents[agent_i].c_range, cell_size=CELL_SIZE, fill=self.agents[agent_i].color, width = 3)
+            draw_square_outline(img, self.agents[agent_i].pos, self.agents[agent_i].c_range, cell_size=CELL_SIZE, fill=self.agents[agent_i].color, width = 2)
             
         img = np.asarray(img)
         if mode == 'rgb_array':
@@ -655,14 +669,13 @@ class Agent(object):
     #it's considered in range, inside a square with distance of c_range squares around the agent
     def in_range(self, agent2):
         delta_pos = abs(np.subtract(np.array(self.pos), np.array(agent2.pos)) ) 
-        #print(delta_pos)
-        if delta_pos[0] >= self.c_range*2 or delta_pos[1] >= self.c_range*2 :
+        if delta_pos[0] > self.c_range*2 or delta_pos[1] > self.c_range*2 :
             return False
         else:
             return True
 
 
-AGENT_COLORS = [ImageColor.getcolor('blue', mode='RGB'),ImageColor.getcolor('red', mode='RGB'),ImageColor.getcolor('green', mode='RGB'),ImageColor.getcolor('yellow', mode='RGB')]
+AGENT_COLORS = [(30, 150, 245),(220, 10, 10),(0, 204, 0),(255, 215, 0)]
 AGENT_NEIGHBORHOOD_COLOR = (186, 238, 247)
 UNEXPLORED_COLOR = ImageColor.getcolor('lightgrey', mode='RGB')
 
