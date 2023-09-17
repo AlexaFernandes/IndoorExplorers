@@ -3,11 +3,16 @@ DEFAULT_CONFIG={
     #  number of agents
     "n_agents": 4,
     #  general configuration for the topology of operational area
-    "initial": {0: [0,0],
-                1: [0,20],
-                2 :[20,0],
-                3: [20,20]
-                },
+    "initial": [ [0,0],
+                 [0,20],
+                 [20,0],
+                 [20,20]
+                ],
+    # "initial": {0: [0,0],
+    #             1: [0,20],
+    #             2 :[20,0],
+    #             3: [20,20]
+    #             },
     "size":[21,21],
     #  configuration regarding the movements of uav
     "movementCost":0.2,
@@ -36,6 +41,9 @@ DEFAULT_CONFIG={
     # ======== SENSORS | LIDAR =======
     "lidar_range":6,
     "lidar_channels":32,
+
+    # ======== COMMUNICATION =======
+    "comm_range": 6.0,
 
     # ======== VIEWER =========
     "viewer":{"width":21*30,

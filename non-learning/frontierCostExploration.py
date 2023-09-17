@@ -7,14 +7,18 @@ import argparse
 import matplotlib.pyplot as plt
 import json
 import pickle as p
+from colorama import Fore, Back, Style
 
-from indoor_explorers.envs.settings import DEFAULT_CONFIG as conf
+from mars_explorer.envs.settings import DEFAULT_CONFIG as conf
+from multi_agent.indoor_explorers import IndoorExplorers
+
+from ma_gym.wrappers import Monitor
+
 
 N_GAMES = 30
 N_STEPS = 3000
 DELAY = 0.
-RENDER_ACTIVE = False
-RENDER_GRID = False
+RENDER_ACTIVE = True
 CONF_PATH = "/home/thedarkcurls/IndoorExplorers/non-learning/params.json"
 
 
@@ -38,7 +42,7 @@ def get_conf():
 
 def find_frontiers(obs):
 
-    free_x, free_y, free_z = np.where(obs == 0.3)
+    free_x, free_y = np.where(obs == 0.3)
     free_points = np.array(list(zip(free_x, free_y)))
 
     # diff --> temporal differences
@@ -55,7 +59,7 @@ def find_frontiers(obs):
             test_y = free_y + dy
 
             if test_x>=0 and test_x<obs.shape[0] and test_y>=0 and test_y<obs.shape[1]:
-                if obs[test_x, test_y] == 0:
+                if obs[test_x, test_y] == 0.0:
                     frontiers.append([free_x, free_y])
                     break
 
@@ -64,22 +68,27 @@ def find_frontiers(obs):
 
 def check_collision(distances, canditate_action, obs):
 
+    _grid_shape = env.get_grid_shape()
     for index, (x,y) in enumerate(canditate_action):
 
-        if x<0 or y<0 or x>=obs.shape[0] or y>=obs.shape[1]:
+        if x<0 or y<0 or x>= _grid_shape[0] or y>= _grid_shape[1]: #outside bounds
             distances[index] = np.inf
-        elif obs[x,y] == 1.:
+        elif obs[x,y] > 0.3: #obstacle
             distances[index] = np.inf
 
     return distances
 
 
-def evaluate(frontiers, obs):
+def evaluate(frontiers, obs, agent_i):
     # return the distance from each candiatate action
-    canditate_action = [[env.x+1, env.y], # action 0 is right
-                        [env.x-1, env.y], # action 1 is left
-                        [env.x, env.y+1], # action 2 is down
-                        [env.x, env.y-1]] # action 3 is up
+    canditate_action = [[env.agents[agent_i].pos[0]   , env.agents[agent_i].pos[1]+1], # action 0 is down
+                        [env.agents[agent_i].pos[0]-1 , env.agents[agent_i].pos[1]],   # action 1 is left
+                        [env.agents[agent_i].pos[0]   , env.agents[agent_i].pos[1]-1], # action 2 is up
+                        [env.agents[agent_i].pos[0]+1 , env.agents[agent_i].pos[1]],   # action 3 is right
+                        [env.agents[agent_i].pos[0]   , env.agents[agent_i].pos[1]]    # action 4 is no op
+                        ]
+                        
+                        
 
     distances = distance.cdist(frontiers, canditate_action)
 
@@ -89,32 +98,61 @@ def evaluate(frontiers, obs):
 
 
 def get_action(obs):
+    actions = []
+    for agent_i in range(env.n_agents):
+        frontiers = find_frontiers(env.get_full_obs()) # obs[agent_i])
+        evaluate_actions = evaluate(frontiers, env.get_full_obs(), agent_i)#)obs[agent_i], agent_i)
+        actions.append(np.argmin(evaluate_actions))
+    return actions
 
-    frontiers = find_frontiers(obs)
-    evaluate_actions = evaluate(frontiers, obs)
 
-    return np.argmin(evaluate_actions)
-
-
+#TODO change for multi agents!
 def play_game(env):
 
     exploration_rate = []
-    obs = env.reset()
-    if RENDER_ACTIVE:env.render()
+    # obs_n = env.reset()
+    # if RENDER_ACTIVE:env.render()
 
-    for time_step in range(N_STEPS):
+    #for time_step in range(N_STEPS):
+    for ep_i in range(args.episodes):
+        done_n = [False for _ in range(env.n_agents)]
+        ep_reward = 0
 
-        action = get_action(obs)
-
-        obs, reward, done, info = env.step(action,RENDER_GRID)
-
-        exploration_rate.append(np.count_nonzero(obs)/(obs.shape[0]*obs.shape[1]))
-
+        env.seed(ep_i)
+        obs_n = env.reset()
         if RENDER_ACTIVE:env.render()
-        time.sleep(DELAY)
 
-        if done:
-            break
+        while not all(done_n):
+            action_n = get_action(obs_n)
+            print(Fore.RED) 
+            print(action_n)
+            print(Style.RESET_ALL)
+            obs_n, reward_n, done_n, info = env.step(action_n)
+            _full_obs = env.get_full_obs()
+
+            #TODO o que é que é mais correto? ir buscar o _full_obs diretamente do env ou o _full_obs fazer parte das obs??
+            #exploration_rate.append(np.count_nonzero(obs[env.n_agents])/(obs[env.n_agents].shape[0]*obs[env.n_agents].shape[1])) #obs[env.n_agents] -> _full_obs
+            exploration_rate.append(np.count_nonzero(_full_obs)/(_full_obs.shape[0]*_full_obs.shape[1]))
+            #TODO isto provavelmente terá de ser mudado de sítio para fora do while, pq neste momento os agents estão done todos ao mesmo tempo 
+            #(aka quando o mapa foi todo explorado ou o maximo de steps atingido, então estão sincronos)
+            #mas se não forem sincronos o exploration rate não sei se deveria ficar aqui
+
+            ep_reward += sum(reward_n)
+            if RENDER_ACTIVE:env.render()
+            time.sleep(DELAY)
+
+        #------------------------------------------------------------------
+        # action = get_action(obs)
+
+        # obs, reward, done, info = env.step(action)
+
+        # exploration_rate.append(np.count_nonzero(obs)/(obs.shape[0]*obs.shape[1]))
+
+        # if RENDER_ACTIVE:env.render()
+        # time.sleep(DELAY)
+
+        # if done:
+        #     break
 
     return exploration_rate
 
@@ -122,13 +160,37 @@ def play_game(env):
 if __name__ == "__main__":
     conf = get_conf()
 
-    env = gym.make('indoor_explorers:exploConf-v01', conf=conf)
+    #env = gym.make('mars_explorer:exploConf-v01', conf=conf)
+
+    parser = argparse.ArgumentParser(description='Random Agent for indoor-explorers')
+    parser.add_argument('--env', default='IndoorExplorers21x21-v0',
+                        help='Name of the environment (default: %(default)s)')
+    parser.add_argument('--episodes', type=int, default=10,
+                        help='episodes (default: %(default)s)')
+    args = parser.parse_args()
+
+    env = gym.make(args.env, conf=conf)
+    env = Monitor(env, directory='recordings/' + args.env, force=True)
 
     data = []
-    for game in range(N_GAMES):
-        print(f"Running game:{game}")
+    # for game in range(N_GAMES):
+    #     print(f"Running game:{game}")
+    #     # exploration_rate --> percentage of explorated area per time step (array)
+    #     exploration_rate = play_game(env)
+    #     data.append(exploration_rate)
+
+    # p.dump( data, open("cost_42x42.p","wb"))
+
+
+    for ep_i in range(args.episodes):
+        done_n = [False for _ in range(env.n_agents)]
+        ep_reward = 0
+
+        print(f"Running episode:{ep_i}")
         # exploration_rate --> percentage of explorated area per time step (array)
         exploration_rate = play_game(env)
         data.append(exploration_rate)
 
-    p.dump( data, open("cost_84x84.p","wb"))
+        print('Episode #{} Reward: {}'.format(ep_i, ep_reward))
+    env.close()
+    p.dump( data, open("multi_cost_21x21.p","wb"))

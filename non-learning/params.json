@@ -16,14 +16,17 @@
   "entropy_coeff_schedule": null,
   "env": null,
   "env_config": {
+        "n_agents": 4,
+        "initial":  [ [0,0],
+                      [0,20],
+                      [20,0],
+                      [20,20]
+                    ],
         "bonus_reward": 0,
         "collision_reward": -50,
-        "initial": [
-          0,
-          0
-        ],
         "lidar_channels": 32,
         "lidar_range": 6,
+        "comm_range": 6.0,
         "margins": [
           1,
           1
@@ -43,25 +46,26 @@
         "obstacles": 12,
         "out_of_bounds_reward": -50,
         "size": [
-          42,
-          42
+          21,
+          21
         ],
         "viewer": {
-          "background_img": "../img/wood_floor.jpg",
-          "draw_grid": true,
+          "background_img": "/home/thedarkcurls/GeneralExplorationPolicy/mars-explorer/img/wood_floor.jpg",
+          "draw_grid": false,
           "draw_lidar": true,
           "draw_traceline": false,
-          "drone_img": "../img/drone.png",
+          "drone_img": "/home/thedarkcurls/GeneralExplorationPolicy/mars-explorer/img/drone.png",
           "height": 630,
-          "light_mask": "../img/light_350_hard.png",
+          "light_mask": "/home/thedarkcurls/GeneralExplorationPolicy/mars-explorer/img/light_350_hard.png",
           "night_color": [
             20,
             20,
             20
           ],
-          "obstacle_img": "../img/stone_black2.png",
-          "title": "Indoor-Explorers-V01",
-          "width": 630
+          "obstacle_img": "/home/thedarkcurls/GeneralExplorationPolicy/mars-explorer/img/stone_black2.png",
+          "title": "Mars-Explorer-V01",
+          "width": 630,
+          "print_map": false
         },
         "viwer": {
           "height": 840,

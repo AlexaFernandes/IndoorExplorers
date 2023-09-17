@@ -65,7 +65,8 @@ class IndoorExplorers(gym.Env):
                                                                           #               0.3 free to move
                                                                           #               0.0 unexplored
                                                                           #               >1  agent id
-        
+        #matrix that tells which agents are in range of each
+        self.comm_range = np.full((self.n_agents,self.n_agents), 0)
 
         self.viewer = None
         self.full_observable = full_observable
@@ -76,15 +77,20 @@ class IndoorExplorers(gym.Env):
         # 0.5 --> obstacle
         # >1.0 -> agents ids
         #highest value that can be observed in each cell is the max. agent id
-        self._obs_high = np.full(grid_shape, np.array(self.n_agents, dtype=np.float32)) 
+        self._obs_high = np.full(self._grid_shape, np.array(self.n_agents, dtype=np.float32)) 
         #lowest value that can be observed in each cell is 0.0
-        self._obs_low = np.full(grid_shape,np.array(0.0, dtype=np.float32))
+        self._obs_low = np.full(self._grid_shape,np.array(0.0, dtype=np.float32))
         self.observation_space = MultiAgentObservationSpace(
-            [spaces.Box(self._obs_low, self._obs_high, grid_shape) for _ in range(self.n_agents)])
+            [spaces.Box(self._obs_low, self._obs_high, self._grid_shape) for _ in range(self.n_agents)]) #one map for each agent  (+ 1 (_full_obs)??)
 
         self._total_episode_reward = None
         self.seed()
 
+    def get_grid_shape(self):
+        return self._grid_shape
+
+    def get_full_obs(self):
+        return self._full_obs
 
     #checks if is a wall in pos
     def does_wall_exists(self, pos):
@@ -106,13 +112,25 @@ class IndoorExplorers(gym.Env):
 
     #receives a list of agents that are in comm range that want to merge their maps
     def merge_maps(self, agent_list):
-        new_merged_map = np.array.full(self._grid_shape, 0.0)
+        new_merged_map = np.full(self._grid_shape, 0.0)
 
         for col in range(0, self._grid_shape[1]):
             for row in range(0, self._grid_shape[0]):
                 for agent_i in agent_list:
-                    if self.agents[agent_i].exploredMap[row][col] != 0.0:
+                    #save if it is a wall or explored cell
+                    if self.agents[agent_i].exploredMap[row][col] == 0.5 or self.agents[agent_i].exploredMap[row][col] == 0.3:
                         new_merged_map[row][col]= self.agents[agent_i].exploredMap[row][col]
+                    #if it was an agent, check if it is still in range
+                    elif self.agents[agent_i].pastExploredMap[row][col] >= 1.0:
+                        #if it is not in range, mark the cell as explored/empty
+                        if (self.agents[agent_i].pastExploredMap[row][col]-1) not in agent_list:
+                            print("{} out of range of {}".format(self.agents[agent_i].pastExploredMap[row][col]-1, agent_i))
+                            new_merged_map[row][col] = 0.3
+        
+        #save the positions of all agents in range in the end, so their position isn't lost
+        for agent_i in agent_list:
+            agent_pos = self.agents[agent_i].pos
+            new_merged_map[agent_pos[0]][agent_pos[1]] = agent_i + 1
 
         #save a copy of the new map (it needs to be a copy otherwise they will have all the same reference and will be changing the same object)
         for agent_i in agent_list:
@@ -122,19 +140,54 @@ class IndoorExplorers(gym.Env):
         # else:  
 
     #se calhar faria mais sentido a partir de um certo agent quem está in range
-    def check_who_in_comm_range(self):
+    def update_comm_range(self):
         l = []
         l.extend(range(0, self.n_agents))
         #generate a list with all the unique pairings among all agents
         combinations = list(itertools.combinations(l, 2))
+        #in_range = []
+        self.comm_range = np.full((self.n_agents,self.n_agents),0)
 
-        #check for collisions between any 2 agents
+        #print(combinations)
+        #check if any 2 agents are in comms range and save in the comms matrix
         for pair in combinations:
             if self.agents[pair[0]].in_range(self.agents[pair[1]]) == True:
-                in_range.append(pair)
-            
-        #return list of pairs of agents in range of eachother
-        return in_range
+                #print(pair)
+                #in_range.append(pair)
+                self.comm_range[pair[0]][pair[1]] = self.comm_range[pair[1]][pair[0]] = 1 
+            else:
+                self.comm_range[pair[0]][pair[1]] = self.comm_range[pair[1]][pair[0]] = 0
+
+    def DFSUtil(self, temp, agent_i, visited):
+ 
+        # Mark the current vertex as visited
+        visited[agent_i] = True
+
+        # Store the vertex to list
+        temp.append(agent_i)
+
+        # Repeat for all vertices adjacent
+        # to this vertex v
+        for j in range(0, self.n_agents):
+            #go through the upper triangular matrix (since the matrix is simmetric, we olny need to go through one of the triangular matrices)
+            if (agent_i < j):
+                if self.comm_range[agent_i][j] == 1: #if they are connected
+                    if visited[j] == False:
+                        # Update the list
+                        temp = self.DFSUtil(temp, j, visited)
+                    
+        return temp
+
+    def connectedComponents(self):
+        visited = []
+        cc = []
+        for i in range(self.n_agents):
+            visited.append(False)
+        for agent_i in range(self.n_agents):
+            if visited[agent_i] == False:
+                temp = []
+                cc.append(self.DFSUtil(temp, agent_i, visited))
+        return cc
 
     def check_who_in_comm_range_of(agent_i, self):
         l = []
@@ -201,6 +254,9 @@ class IndoorExplorers(gym.Env):
         #update every agent's explored map and _full_obs
         self._updateMaps()
 
+        #update comms matrix
+        self.update_comm_range()
+
 
     def __update_agent_pos(self, agent_i, move):
 
@@ -263,7 +319,7 @@ class IndoorExplorers(gym.Env):
         #create an array of lidar, one per agent
         self.ldr = [Lidar(r=self.conf["lidar_range"],
                          channels=self.conf["lidar_channels"],
-                         map=self.lidar_map)                     for _ in range(self.n_agents)]
+                         map=self.lidar_map, fov = [0,np.pi/2])                     for _ in range(self.n_agents)]
         
         #create list of obstacle indexes
         obstacles_idx = np.where(self.groundTruthMap == 1.0)
@@ -276,7 +332,7 @@ class IndoorExplorers(gym.Env):
     def _updateMaps(self):
 
         for agent_i in range(self.n_agents):
-            self.agents[agent_i].pastExploredMaps = self.agents[agent_i].exploredMap.copy()
+            self.agents[agent_i].pastExploredMap = self.agents[agent_i].exploredMap.copy()
 
             lidarX= self.lidarsIndexes[agent_i][:,0]
             lidarY = self.lidarsIndexes[agent_i][:,1]
@@ -335,13 +391,8 @@ class IndoorExplorers(gym.Env):
             #reset spawn flag
             random_spawn=RANDOM_SPAWN
         
-        #this replaces the two commented lines (activateLidar + _updateMaps)
+        #this replaces the two commented lines (activateLidar + _updateMaps + update_comms)
         self.__update_agents_view()
-        # # initial position is explored
-        # self._activateLidars()
-
-        # #update everyone's explored maps
-        # self._updateMaps()
 
         #create grid for later render
         self.__draw_base_img()
@@ -352,19 +403,26 @@ class IndoorExplorers(gym.Env):
         self._total_episode_reward = [0 for _ in range(self.n_agents)]
         #old: self.agent_pos = {} -> done in reset_agents() below
         self.reset_agents() 
+        self.comm_range = np.full((self.n_agents,self.n_agents), 0)
 
         #criar novo mapa e dá spawn de novo dos agents
         #cria lidares novos (isto inclui criar novos obstaulos) com base no novo mapa
         #activa os lidars e dá update dos explored maps de cada um 
-        #com base no que cada um consegue ver
+        #com base no que cada um consegue ver e na matrix de comms
         self.__init_full_obs()
+
+        groups_in_range = []
+        groups_in_range = self.connectedComponents()
+        print("Reset: groups in range: {}".format(groups_in_range))
+        for group in groups_in_range:
+            self.merge_maps(group)
 
 
         #repor todas as outras variaveis
         self._step_count = 0
         self._steps_beyond_done = None
         #old: _agent_dones = [False for _ in range(self.n_agents)] -> done in reset_agents a few lines up
-
+        print("reset done")
         return self.get_agents_obs()
 
     #CONFIRMAR!!
@@ -373,12 +431,31 @@ class IndoorExplorers(gym.Env):
             "Call reset before using step method."
 
         self._step_count += 1
-        
-        #apply chosen action
+        print("Start of step {}".format(self._step_count))
+        # #communicate maps
+        # #check if they are in comm range and then change info
+        # groups_in_range = []
+        # groups_in_range = self.connectedComponents()
+        # print("groups in range: {}".format(groups_in_range))
+        # for group in groups_in_range:
+        #     self.merge_maps(group)
+
+        #apply chosen action 
         for agent_i, action in enumerate(agents_action):
             if not (self.agents[agent_i].done): #_agent_dones[agent_i]):
                 self.__update_agent_pos(agent_i, action)
-        
+
+        #print(self.comm_range)
+
+        #communicate maps
+        #check if they are in comm range and then change info
+        groups_in_range = []
+        groups_in_range = self.connectedComponents()
+        print("after actions, groups in range: {}".format(groups_in_range))
+        for group in groups_in_range:
+            self.merge_maps(group)
+
+
         #compute rewards for each agent 
         rewards = [self._computeReward(agent_i) for agent_i in range(self.n_agents)]
 
@@ -411,9 +488,6 @@ class IndoorExplorers(gym.Env):
                     )
                 self._steps_beyond_done += 1
 
-        #TODO colocar na função render()?
-        # for agent in range(self.n_agents):
-        #     printMap(self.agents[agent_i].exploredMap)
 
         return self.get_agents_obs(), rewards, self.get_agents_dones(), {'other info' : None}  #_agent_dones
         #the info parameter was: {'prey_alive': self._prey_alive} in the original code, TODO see what extra indo would be useful for me
@@ -460,9 +534,12 @@ class IndoorExplorers(gym.Env):
             else:
                 fill_cell(img, self.agents[agent_i].pos, cell_size=CELL_SIZE, fill='white')
             draw_cell_outline(img, self.agents[agent_i].pos, cell_size=CELL_SIZE, fill='black',width=1)
+            
+        for agent_i in range(self.n_agents):
             draw_circle(img, self.agents[agent_i].pos, cell_size=CELL_SIZE, fill=self.agents[agent_i].color)
-            write_cell_text(img, text=str(agent_i + 1), pos=self.agents[agent_i].pos, cell_size=CELL_SIZE,
+            write_cell_text(img, text=str(agent_i), pos=self.agents[agent_i].pos, cell_size=CELL_SIZE,
                             fill='white', margin=0.4)  
+            draw_square_outline(img, self.agents[agent_i].pos, self.agents[agent_i].c_range, cell_size=CELL_SIZE, fill=self.agents[agent_i].color, width = 2)
             
         img = np.asarray(img)
         if mode == 'rgb_array':
@@ -475,7 +552,8 @@ class IndoorExplorers(gym.Env):
             #este print tem que ser depois de atualizar o viewer pq senão acontece aquele comportamento estranho em que o viewer parece estar atrasado
             #mas simplesmente não foi renderizado depois de ter os dados atualizados
             if self.conf["viewer"]["print_map"] == True:
-                printMap(self._full_obs, self.n_agents)
+                #printMap(self._full_obs, self.n_agents)
+                printAgentsMaps(self.agents, self.n_agents)
             return self.viewer.isopen
 
     def seed(self, n=None):
@@ -504,7 +582,8 @@ class IndoorExplorers(gym.Env):
             self.agents[agent_i].done = False
             self.agents[agent_i].pos = None
             self.agents[agent_i].collision = False
-            self.agents[agent_i].out_of_bounds = False  
+            self.agents[agent_i].out_of_bounds = False 
+            self.agents[agent_i].c_range = self.conf["comm_range"]
             #TODO ver o que mais é preciso dar reset??
     
     #CONFIRMAR! alterar para: um agent vê o seu explored map basicamente
@@ -529,6 +608,7 @@ class IndoorExplorers(gym.Env):
         # if self.full_observable:
         #     _obs = np.array(_obs).flatten().tolist()
         #     _obs = [_obs for _ in range(self.n_agents)]
+        #_obs.append(_full_obs)
         return _obs
 
     def get_agents_dones(self):
@@ -589,14 +669,13 @@ class Agent(object):
     #it's considered in range, inside a square with distance of c_range squares around the agent
     def in_range(self, agent2):
         delta_pos = abs(np.subtract(np.array(self.pos), np.array(agent2.pos)) ) 
-
-        if delta_pos[0] > self.c_range and delta_pos[1] > self.c_range :
+        if delta_pos[0] > self.c_range*2 or delta_pos[1] > self.c_range*2 :
             return False
         else:
             return True
 
 
-AGENT_COLORS = [ImageColor.getcolor('blue', mode='RGB'),ImageColor.getcolor('red', mode='RGB'),ImageColor.getcolor('green', mode='RGB'),ImageColor.getcolor('yellow', mode='RGB')]
+AGENT_COLORS = [(30, 150, 245),(220, 10, 10),(0, 204, 0),(255, 215, 0)]
 AGENT_NEIGHBORHOOD_COLOR = (186, 238, 247)
 UNEXPLORED_COLOR = ImageColor.getcolor('lightgrey', mode='RGB')
 
