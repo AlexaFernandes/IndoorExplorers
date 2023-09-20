@@ -2,7 +2,7 @@ DEFAULT_CONFIG={
     # ======== TOPOLOGY =======
     #  general configuration for the topology of operational area
     "initial":[0,0],
-    "size":[21,21],
+    "size":[112,120],
     #  configuration regarding the movements of uav
     "movementCost":0.2,
 
@@ -20,7 +20,7 @@ DEFAULT_CONFIG={
     # margins expressed in cell if rows/columns not activated
     "margins":[1, 1],
     # obstacle size expressed in cell if rows/columns not activated
-    "obstacle_size":[2,2],
+    "obstacle_size":[10,10],
     # mas number of steps for the environment
     "max_steps":400,
     "bonus_reward":400,

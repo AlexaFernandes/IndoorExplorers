@@ -14,15 +14,15 @@ if __name__ == '__main__':
     #install_roms_in_folder('roms/')
 
     #create agent
-    dddqn = DDDQNAgent(GAMES[2], MOVES, epsilon_decay=0.99999, batch_size=32)#(GAMES[2], COMBOS[0], epsilon_decay=0.99999, batch_size=32)
+    dddqn = DDDQNAgent('IndoorExplorers', MOVES, epsilon_decay=0.99999, batch_size=32)#(GAMES[2], COMBOS[0], epsilon_decay=0.99999, batch_size=32)
     dddqn.q_eval.summary()
     dddqn.q_target.summary()
     
     #train agent
-    dddqn.run(num_episodes=5, checkpoint=True, cp_interval=100, cp_render=True)
+    dddqn.run(num_episodes=100, checkpoint=True, cp_interval=100, cp_render=True)
     
     #load model
-    dddqn.load('models', 'DDDQN_test_IndoorExplorers_QEval.h5', 'DDDQN_test_IndoorExplorers_QTarget.h5')
+    dddqn.load('models', 'DDDQN_1000_IndoorExplorers_QEval.h5', 'DDDQN_1000_IndoorExplorers_QTarget.h5')
     
     #play game
     dddqn.play_episode(render=True, render_and_save=True, otype='GIF')

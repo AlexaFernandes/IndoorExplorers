@@ -3,7 +3,7 @@ import retro
 import numpy as np
 import cv2
 import random
-
+PRINT=False
 # Discretize continuous action space
 class Discretizer(gym.ActionWrapper):
     def __init__(self, env, combos):
@@ -29,7 +29,7 @@ class TimeLimit(gym.Wrapper):
         self._elapsed_steps = 0
 
     def step(self, action):
-        obs, reward, done, info = self.env.step(action)
+        obs, reward, done, info = self.env.step(action, PRINT)
         self._elapsed_steps += 1
         if self._elapsed_steps >= self._max_episode_steps:
             done = True
@@ -50,7 +50,7 @@ class SkipFrames(gym.Wrapper):
         done = False
         totalReward = 0.0
         for _ in range(self.n):
-            obs, reward, done, info = self.env.step(action)
+            obs, reward, done, info = self.env.step(action, PRINT)
             totalReward += reward
             if done:
                 break

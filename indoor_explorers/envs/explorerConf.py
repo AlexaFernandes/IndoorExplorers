@@ -1,6 +1,6 @@
 import numpy as np
 
-from indoor_explorers.utils.printMaps import printMap
+from indoor_explorers.utils.printMaps import *
 from indoor_explorers.utils.randomMapGenerator import Generator
 from indoor_explorers.utils.lidarSensor import Lidar
 from indoor_explorers.render.viewer import Viewer
@@ -33,7 +33,7 @@ class ExplorerConf(gym.Env):
         self.SIZE = self.conf["size"]
 
         self.action_space = gym.spaces.Discrete(4)
-        self.observation_space = gym.spaces.Box(0.,1.,(self.sizeX, self.sizeY, 1))
+        self.observation_space = gym.spaces.Box(0, 255, (self.sizeX, self.sizeY, 3), dtype=np.uint8) #gym.spaces.Box(0.,1.,(self.sizeX, self.sizeY, 1))
 
         self.viewerActive = False
 
@@ -81,7 +81,7 @@ class ExplorerConf(gym.Env):
         self.outputMap = self.exploredMap.copy()
         self.outputMap[self.x, self.y] = 0.6
 
-        self.new_state = np.reshape(self.outputMap, (self.sizeX, self.sizeY,1)) #cv2.cvtColor(self.outputMap, cv2.COLOR_RGB2BGR)
+        self.new_state = cv2.cvtColor(get_3d_array(self.outputMap, _dtype= np.uint8), cv2.COLOR_RGB2BGR) #np.reshape(self.outputMap, (self.sizeX, self.sizeY,1)) 
         self.reward = 0
         self.done = False
 
@@ -172,7 +172,7 @@ class ExplorerConf(gym.Env):
 
         self.outputMap = self.exploredMap.copy()
         self.outputMap[self.x, self.y] = 0.6
-        self.new_state = np.reshape(self.outputMap, (self.sizeX, self.sizeY,1))#cv2.cvtColor(self.outputMap, cv2.COLOR_RGB2BGR)
+        self.new_state = cv2.cvtColor(get_3d_array(self.outputMap, _dtype= np.uint8), cv2.COLOR_RGB2BGR)#np.reshape(self.outputMap, (self.sizeX, self.sizeY,1))#cv2.cvtColor(self.outputMap, cv2.COLOR_RGB2BGR)
         self.timeStep += 1
 
 
@@ -207,7 +207,7 @@ class ExplorerConf(gym.Env):
         self.drone_trajectory.append([self.x, self.y])
 
     def printMaps(self):
-        printMap(self.pastExploredMap)
+        printMap(self.pastExploredMap,1)
 
     def step(self, action, print):
         self.action = action

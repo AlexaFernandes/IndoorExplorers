@@ -9,6 +9,7 @@ import numpy as np #NumPy
 from time import time #calculate runtime
 from collections import deque #needed for replay memory
 from random import sample #used to get random minibacth
+from colorama import Fore, Back, Style
 
 #TensorFlow 2.0
 import tensorflow as tf
@@ -63,12 +64,12 @@ class DDDQNAgent(object):
         env = gym.make('indoor_explorers:exploConf-v01', conf=conf)
         #env = ExplorerConfs()  
         #env = Discretizer(env, combos=self.combos)
-        # if time_limit is not None: env = TimeLimit(env, time_limit)
-        # env = SkipFrames(env)
-        # env = Rgb2Gray(env)
-        # env = Downsample(env, downsampleRatio)
-        # env = FrameStack(env, numStack)
-        # env = ScaledFloatFrame(env)
+        if time_limit is not None: env = TimeLimit(env, time_limit)
+        env = SkipFrames(env)
+        env = Rgb2Gray(env)
+        #env = Downsample(env, downsampleRatio)
+        env = FrameStack(env, numStack)
+        env = ScaledFloatFrame(env)
         return env
 
     
@@ -229,6 +230,9 @@ class DDDQNAgent(object):
                 print('EVALUATION: {}'.format(round(eval_score, 4)))
                 self.log.append([e, score, np.average(scores[-50:]), elapsed_time, eval_score])
                 fileName = 'DDDQN_{}_{}_{}'.format(e, self.game, Now(separate=False))
+                print(Fore.RED)
+                print("in save")
+                print(Style.RESET_ALL)
                 self.save('models', fileName)
                 self.save_log('logs', fileName)
                 convert_frames(frames, 'renders', fileName, otype=otype)
