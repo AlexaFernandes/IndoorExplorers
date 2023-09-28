@@ -2,14 +2,14 @@ DEFAULT_CONFIG={
     # ======== TOPOLOGY =======
     #  general configuration for the topology of operational area
     "initial":[0,0],
-    "size":[112,120],
+    "size":[128,128],
     #  configuration regarding the movements of uav
-    "movementCost":0.2,
+    "movementCost":0.5,
 
     # ======== ENVIROMENT =======
     # configuration regarding the random map generation
     # absolute number of obstacles, randomly placed in env
-    "obstacles":12,
+    "obstacles":400,
     # if rows/colums activated the obstacles will be placed in a semi random
     # spacing
     "number_rows":None,
@@ -18,14 +18,14 @@ DEFAULT_CONFIG={
     # maximum noise on each axes
     "noise":[0,0],
     # margins expressed in cell if rows/columns not activated
-    "margins":[1, 1],
+    "margins":[0, 0],
     # obstacle size expressed in cell if rows/columns not activated
-    "obstacle_size":[10,10],
+    "obstacle_size":[5,5],
     # mas number of steps for the environment
     "max_steps":400,
-    "bonus_reward":400,
-    "collision_reward":-400,
-    "out_of_bounds_reward":-400,
+    "bonus_reward":500,
+    "collision_reward":-1000,
+    "out_of_bounds_reward":-1000,
 
     # ======== SENSORS | LIDAR =======
     "lidar_range":6,
@@ -42,6 +42,7 @@ DEFAULT_CONFIG={
               "night_color":(20, 20, 20),
               "draw_lidar":True,
               "draw_grid":True,
-              "draw_traceline":False
+              "draw_traceline":False,
+              "print_map": False
              }
 }

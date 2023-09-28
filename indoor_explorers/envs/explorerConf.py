@@ -33,7 +33,7 @@ class ExplorerConf(gym.Env):
         self.SIZE = self.conf["size"]
 
         self.action_space = gym.spaces.Discrete(4)
-        self.observation_space = gym.spaces.Box(0, 255, (self.sizeX, self.sizeY, 3), dtype=np.uint8) #gym.spaces.Box(0.,1.,(self.sizeX, self.sizeY, 1))
+        self.observation_space = gym.spaces.Box(0, 255, (self.sizeX, self.sizeY, 1), dtype=np.uint8) #gym.spaces.Box(0.,1.,(self.sizeX, self.sizeY, 1))
 
         self.viewerActive = False
 
@@ -81,7 +81,8 @@ class ExplorerConf(gym.Env):
         self.outputMap = self.exploredMap.copy()
         self.outputMap[self.x, self.y] = 0.6
 
-        self.new_state = cv2.cvtColor(get_3d_array(self.outputMap, _dtype= np.uint8), cv2.COLOR_RGB2BGR) #np.reshape(self.outputMap, (self.sizeX, self.sizeY,1)) 
+        #self.new_state = cv2.cvtColor(get_3d_array(self.outputMap, _dtype= np.uint8), cv2.COLOR_RGB2BGR) #
+        self.new_state = np.reshape(self.outputMap, (self.sizeX, self.sizeY,1)) 
         self.reward = 0
         self.done = False
 
@@ -172,7 +173,8 @@ class ExplorerConf(gym.Env):
 
         self.outputMap = self.exploredMap.copy()
         self.outputMap[self.x, self.y] = 0.6
-        self.new_state = cv2.cvtColor(get_3d_array(self.outputMap, _dtype= np.uint8), cv2.COLOR_RGB2BGR)#np.reshape(self.outputMap, (self.sizeX, self.sizeY,1))#cv2.cvtColor(self.outputMap, cv2.COLOR_RGB2BGR)
+        #self.new_state = cv2.cvtColor(get_3d_array(self.outputMap, _dtype= np.uint8), cv2.COLOR_RGB2BGR)#
+        self.new_state = np.reshape(self.outputMap, (self.sizeX, self.sizeY,1))#cv2.cvtColor(self.outputMap, cv2.COLOR_RGB2BGR)
         self.timeStep += 1
 
 
@@ -181,8 +183,8 @@ class ExplorerConf(gym.Env):
         pastExploredCells = np.count_nonzero(self.pastExploredMap)
         currentExploredCells = np.count_nonzero(self.exploredMap)
 
-        # TODO: add fixed cost for moving (-0.5 per move)
-        self.reward = currentExploredCells - pastExploredCells - self.movementCost
+        #compute reward
+        self.reward = 10*(currentExploredCells - pastExploredCells) - self.movementCost
 
 
     def _checkDone(self):
@@ -191,13 +193,13 @@ class ExplorerConf(gym.Env):
             self.done = True
         elif np.count_nonzero(self.exploredMap) > 0.99*(self.SIZE[0]*self.SIZE[1]):
             self.done = True
-            self.reward = self.conf["bonus_reward"]
+            self.reward += self.conf["bonus_reward"]
         elif self.collision:
             self.done = True
-            self.reward = self.conf["collision_reward"]
+            self.reward += self.conf["collision_reward"]
         elif self.out_of_bounds:
             self.done = True
-            self.reward = self.conf["out_of_bounds_reward"]
+            self.reward += self.conf["out_of_bounds_reward"]
 
 
     def _updateTrajectory(self):
@@ -209,14 +211,14 @@ class ExplorerConf(gym.Env):
     def printMaps(self):
         printMap(self.pastExploredMap,1)
 
-    def step(self, action, print):
+    def step(self, action):
         self.action = action
         self._applyRLactions(action)
         self._computeReward()
         self._checkDone()
         self._updateTrajectory()
         #imprimir os mapas numa janela à parte -> GroundTruthMap e exploredMap
-        if print:
+        if self.conf["viewer"]["print_map"]:
             self.printMaps()
 
         info = {}

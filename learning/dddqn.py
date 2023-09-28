@@ -34,7 +34,6 @@ class DDDQNAgent(object):
         self.env = self.build_env(time_limit=time_limit) #retro environment
         self.num_actions = len(combos) #number of possible actions for env
         self.state_shape = self.env.observation_space.shape #env state dims
-        print(self.state_shape)
         #self.state_shape = tf.reshape(self.env.observation_space, [self.state_shape[0],self.state_shape[1],4])
         #self.state_shape = self.state_shape.expand_dims()
         self.state = self.reset() #initialize state
@@ -65,11 +64,11 @@ class DDDQNAgent(object):
         #env = ExplorerConfs()  
         #env = Discretizer(env, combos=self.combos)
         if time_limit is not None: env = TimeLimit(env, time_limit)
-        env = SkipFrames(env)
-        env = Rgb2Gray(env)
-        #env = Downsample(env, downsampleRatio)
-        env = FrameStack(env, numStack)
-        env = ScaledFloatFrame(env)
+        #env = SkipFrames(env)
+        # env = Rgb2Gray(env)
+        # env = Downsample(env, downsampleRatio)
+        # env = FrameStack(env, numStack)
+        # env = ScaledFloatFrame(env)
         return env
 
     
@@ -77,9 +76,9 @@ class DDDQNAgent(object):
     def build_network(self):
     #Build the Dueling DQN Network
         X_input = Input(self.state_shape, name='input')
-        X = Conv2D(32, 8, 4, activation='relu')(X_input)
+        X = Conv2D(32, 8, 1, activation='relu')(X_input)
         X = Conv2D(64, 4, 2, activation='relu')(X)
-        X = Conv2D(64, 3, 1, activation='relu')(X)
+        X = Conv2D(64, 3, 4, activation='relu')(X)
         X = Flatten()(X)
         X = Dense(1024, activation='relu', kernel_initializer='he_uniform')(X)
         X = Dense(512, activation='relu', kernel_initializer='he_uniform')(X)
@@ -110,6 +109,7 @@ class DDDQNAgent(object):
         if training: #when training allow random exploration
             if np.random.random() < self.epsilon: #get random action
                 action = np.random.randint(self.num_actions)
+                #print("random action {}".format(action))
             else: #predict best actions
                 action = np.argmax(self.q_eval.predict(self.state)[0])
             #decay epsilon, if epsilon falls below min then set to min
@@ -120,6 +120,7 @@ class DDDQNAgent(object):
                 print('Epsilon mininum of {} reached'.format(self.epsilon_min))
         else: #if not training then always get best action
             action = np.argmax(self.q_eval.predict(self.state)[0])
+            print("argmax {}".format(action))
         return action
                 
     def learn(self):
@@ -129,7 +130,9 @@ class DDDQNAgent(object):
         mini_batch = sample(self.memory, self.batch_size)
         #separate minibatch into elements
         state, action, next_state, reward, done = [np.squeeze(i) for i in zip(*mini_batch)]
-        Q = self.q_eval.predict(state) #get Q values for starting states
+        state = np.expand_dims(state, axis=3)
+        next_state = np.expand_dims(next_state, axis=3)
+        Q = self.q_eval.predict(state, batch_size = self.batch_size) #get Q values for starting states
         Q_next = self.q_eval.predict(next_state) #get Q values for ending states
         Q_target = self.q_target.predict(next_state) #get Q values from target model
         #update q values
@@ -230,9 +233,9 @@ class DDDQNAgent(object):
                 print('EVALUATION: {}'.format(round(eval_score, 4)))
                 self.log.append([e, score, np.average(scores[-50:]), elapsed_time, eval_score])
                 fileName = 'DDDQN_{}_{}_{}'.format(e, self.game, Now(separate=False))
-                print(Fore.RED)
-                print("in save")
-                print(Style.RESET_ALL)
+                # print(Fore.RED)
+                # print("in save")
+                # print(Style.RESET_ALL)
                 self.save('models', fileName)
                 self.save_log('logs', fileName)
                 convert_frames(frames, 'renders', fileName, otype=otype)

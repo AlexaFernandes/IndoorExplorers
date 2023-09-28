@@ -55,7 +55,7 @@ if __name__ == "__main__":
     for _ in range(100):
         env.render()
         action = env.action_space.sample() # your agent here (this takes random actions)
-        observation, reward, done, info = env.step(action, RENDER_GRID)
+        observation, reward, done, info = env.step(action)
 
         if done:
             observation = env.reset()
