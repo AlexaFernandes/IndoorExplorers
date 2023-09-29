@@ -2,14 +2,14 @@ DEFAULT_CONFIG={
     # ======== TOPOLOGY =======
     #  general configuration for the topology of operational area
     "initial":[0,0],
-    "size":[128,128],
+    "size":[48,48],
     #  configuration regarding the movements of uav
     "movementCost":0.5,
 
     # ======== ENVIROMENT =======
     # configuration regarding the random map generation
     # absolute number of obstacles, randomly placed in env
-    "obstacles":400,
+    "obstacles":50,
     # if rows/colums activated the obstacles will be placed in a semi random
     # spacing
     "number_rows":None,
