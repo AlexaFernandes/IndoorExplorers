@@ -65,6 +65,7 @@ class IndoorExplorers(gym.Env):
                                                                           #               0.3 free to move
                                                                           #               0.0 unexplored
                                                                           #               >1  agent id
+        self.past_full_obs = np.full(self._grid_shape, PRE_IDS['unexplored'])
         #matrix that tells which agents are in range of each
         self.comm_range = np.full((self.n_agents,self.n_agents), 0)
 
@@ -76,13 +77,28 @@ class IndoorExplorers(gym.Env):
         # 0.3 --> explored/empty
         # 0.5 --> obstacle
         # >1.0 -> agents ids
-        #highest value that can be observed in each cell is the max. agent id
-        self._obs_high = np.full(self._grid_shape, np.array(self.n_agents, dtype=np.float32)) 
-        #lowest value that can be observed in each cell is 0.0
-        self._obs_low = np.full(self._grid_shape,np.array(0.0, dtype=np.float32))
-        self.observation_space = MultiAgentObservationSpace(
-            [spaces.Box(self._obs_low, self._obs_high, self._grid_shape) for _ in range(self.n_agents)]) #one map for each agent  (+ 1 (_full_obs)??)
-
+        # OLD!!# #highest value that can be observed in each cell is the max. agent id
+        # self._obs_high = np.full(self._grid_shape, np.array(self.n_agents, dtype=np.float32)) 
+        # # #lowest value that can be observed in each cell is 0.0
+        # self._obs_low = np.full(self._grid_shape,np.array(0.0, dtype=np.float32))
+        # self.observation_space = MultiAgentObservationSpace(
+        #     [spaces.Box(self._obs_low, self._obs_high, self._grid_shape) for _ in range(self.n_agents)]) #one map for each agent  (+ 1 (_full_obs)??)
+        
+        if conf["approach"] == True: #If it is the centralized approach, then we only need the _full_obs TODO check!!
+            #highest value that can be observed in each cell is the 255
+            self._obs_high = np.full((self._grid_shape[0], self._grid_shape[1],1), np.array(255, dtype=np.uint8)) 
+            #lowest value that can be observed in each cell is 0.0
+            self._obs_low = np.full((self._grid_shape[0], self._grid_shape[1],1), np.array(0, dtype=np.uint8))
+            self.observation_space = MultiAgentObservationSpace(
+                [spaces.Box(self._obs_low, self._obs_high, (self._grid_shape[0], self._grid_shape[1],1)) for _ in range(self.n_agents+1)]) #one map for each agent  + 1 (_full_obs)
+        else:
+            #highest value that can be observed in each cell is the 255
+            self._obs_high = np.full((self._grid_shape[0], self._grid_shape[1],1), np.array(255, dtype=np.uint8)) 
+            #lowest value that can be observed in each cell is 0.0
+            self._obs_low = np.full((self._grid_shape[0], self._grid_shape[1],1), np.array(0, dtype=np.uint8))
+            self.observation_space = MultiAgentObservationSpace(
+                [spaces.Box(self._obs_low, self._obs_high, (self._grid_shape[0], self._grid_shape[1],1)) for _ in range(self.n_agents)])
+        
         self._total_episode_reward = None
         self.seed()
 
@@ -330,7 +346,7 @@ class IndoorExplorers(gym.Env):
 
     #CONFIRM!!
     def _updateMaps(self):
-
+        self.past_full_obs = self._full_obs.copy()
         for agent_i in range(self.n_agents):
             self.agents[agent_i].pastExploredMap = self.agents[agent_i].exploredMap.copy()
 
@@ -363,6 +379,7 @@ class IndoorExplorers(gym.Env):
         #creates new map
         self.groundTruthMap = self.__create_grid()
         self._full_obs = np.full(self._grid_shape, PRE_IDS['unexplored'])
+        self.past_full_obs = np.full(self._grid_shape, PRE_IDS['unexplored'])
 
         self.create_lidars()
 
@@ -422,6 +439,8 @@ class IndoorExplorers(gym.Env):
         self._step_count = 0
         self._steps_beyond_done = None
         #old: _agent_dones = [False for _ in range(self.n_agents)] -> done in reset_agents a few lines up
+        #save the initial state for future comparison
+        self.past_full_obs = self._full_obs.copy()
         print("reset done")
         return self.get_agents_obs()
 
@@ -592,6 +611,7 @@ class IndoorExplorers(gym.Env):
         for agent_i in range(self.n_agents):
             # pos = self.agents[agent_i].pos
             _agent_i_obs = self.agents[agent_i].exploredMap 
+            _agent_i_obs = np.reshape(_agent_i_obs, (self._grid_shape[0], self._grid_shape[1],1))
             # _agent_i_obs = [pos[0] / (self._grid_shape[0] - 1), pos[1] / (self._grid_shape[1] - 1)]  # coordinates
 
             # # check if prey is in the view area
@@ -604,6 +624,8 @@ class IndoorExplorers(gym.Env):
             # _agent_i_obs += _prey_pos.flatten().tolist()  # adding prey pos in observable area
             # _agent_i_obs += [self._step_count / self._max_steps]  # adding time
             _obs.append(_agent_i_obs)
+        if self.conf["approach"] == True:
+            _obs.append( np.reshape(self._full_obs, (self._grid_shape[0], self._grid_shape[1],1) ) )
 
         # if self.full_observable:
         #     _obs = np.array(_obs).flatten().tolist()
@@ -615,8 +637,12 @@ class IndoorExplorers(gym.Env):
         return [self.agents[agent_i].done for agent_i in range(self.n_agents)]
 
     def _computeReward(self, agent_i):
-        pastExploredCells = np.count_nonzero(self.agents[agent_i].pastExploredMap)
-        currentExploredCells = np.count_nonzero(self.agents[agent_i].exploredMap)
+        if self.conf["approach"] == True: #if it is a centralized approach thenonly look at _full_obs?? TODO
+            pastExploredCells = np.count_nonzero(self.past_full_obs)
+            currentExploredCells = np.count_nonzero(self._full_obs)
+        else:
+            pastExploredCells = np.count_nonzero(self.agents[agent_i].pastExploredMap)
+            currentExploredCells = np.count_nonzero(self.agents[agent_i].exploredMap)
         reward= 0
 
         #does this ever happen? since we check is the action is valid before it is taken? 
@@ -626,7 +652,7 @@ class IndoorExplorers(gym.Env):
             reward = self.conf["out_of_bounds_reward"]
 
         #CONFIRM!!
-        return reward + currentExploredCells - pastExploredCells - self._step_cost
+        return reward + 10(currentExploredCells - pastExploredCells) - self._step_cost
 
 
 class Agent(object):

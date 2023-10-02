@@ -22,7 +22,7 @@ class ExplorerConf(gym.Env):
         if conf==None:
             self.conf = DEFAULT_CONFIG
         else:
-            self.conf = confgroundTruthMap
+            self.conf = conf
 
         self.sizeX = self.conf["size"][0]
         self.sizeY = self.conf["size"][1]

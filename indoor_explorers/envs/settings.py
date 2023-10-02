@@ -2,7 +2,7 @@ DEFAULT_CONFIG={
     # ======== TOPOLOGY =======
     #  general configuration for the topology of operational area
     "initial":[0,0],
-    "size":[21,21],
+    "size":[48,48],
     #  configuration regarding the movements of uav
     "movementCost":0.2,
 
@@ -24,8 +24,8 @@ DEFAULT_CONFIG={
     # mas number of steps for the environment
     "max_steps":400,
     "bonus_reward":400,
-    "collision_reward":-400,
-    "out_of_bounds_reward":-400,
+    "collision_reward":-1000,
+    "out_of_bounds_reward":-1000,
 
     # ======== SENSORS | LIDAR =======
     "lidar_range":6,
@@ -42,6 +42,7 @@ DEFAULT_CONFIG={
               "night_color":(20, 20, 20),
               "draw_lidar":True,
               "draw_grid":True,
-              "draw_traceline":False
+              "draw_traceline":False,
+              "print_map": False
              }
 }

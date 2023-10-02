@@ -23,6 +23,13 @@ labels1= ['unexplored','free','obstacle','UAV0','UAV1','UAV2','UAV3']
 colors2 = ["#D7D7D7","#FFFFFF","#1E96F5","#E11414" ,"#00CC00","#FFD700"]
 labels2= ['unexplored','free','UAV0','UAV1','UAV2','UAV3']
 
+def get_3d_array(matrix, _dtype):
+    data_3d = np.ndarray(shape=(matrix.shape[0], matrix.shape[1], 3), dtype=_dtype)
+    for i in range(0, matrix.shape[0]):
+        for j in range(0, matrix.shape[1]):
+            data_3d[i][j] = color_map[matrix[i][j]]
+    return data_3d
+
 #prints 1 square map
 def printMap(matrix, n_agents):
 

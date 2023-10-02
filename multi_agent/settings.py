@@ -1,26 +1,28 @@
 DEFAULT_CONFIG={
     # ======== TOPOLOGY =======
+    #  approach (centralized or not centralized)
+    "approach": False,
     #  number of agents
     "n_agents": 4,
     #  general configuration for the topology of operational area
     "initial": [ [0,0],
-                 [0,20],
-                 [20,0],
-                 [20,20]
+                 [0,47],
+                 [47,0],
+                 [47,47]
                 ],
     # "initial": {0: [0,0],
     #             1: [0,20],
     #             2 :[20,0],
     #             3: [20,20]
     #             },
-    "size":[21,21],
+    "size":[48,48],
     #  configuration regarding the movements of uav
-    "movementCost":0.2,
+    "movementCost":0.5,
 
     # ======== ENVIROMENT =======
     # configuration regarding the random map generation
     # absolute number of obstacles, randomly placed in env
-    "obstacles":12,
+    "obstacles":200,
     # if rows/colums activated the obstacles will be placed in a semi random
     # spacing
     "number_rows":None,
@@ -31,12 +33,12 @@ DEFAULT_CONFIG={
     # margins expressed in cell if rows/columns not activated
     "margins":[1, 1],
     # obstacle size expressed in cell if rows/columns not activated
-    "obstacle_size":[2,2],
+    "obstacle_size":[3,3],
     # mas number of steps for the environment
     "max_steps":400,
-    "bonus_reward":400,
-    "collision_reward":-400,
-    "out_of_bounds_reward":-400,
+    "bonus_reward":1000,
+    "collision_reward":-1000,
+    "out_of_bounds_reward":-1000,
 
     # ======== SENSORS | LIDAR =======
     "lidar_range":6,
