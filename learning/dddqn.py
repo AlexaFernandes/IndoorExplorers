@@ -186,7 +186,7 @@ class DDDQNAgent(object):
 
     def reset(self):
     #Reset environment and return expanded state.
-        self.state = np.expand_dims(self.env.reset(), axis=0) 
+        self.state = np.expand_dims(self.env.reset(), axis=1) #old axis=0 
 
     def close(self):
     #Close the environment.
@@ -196,7 +196,7 @@ class DDDQNAgent(object):
     def step(self, action_n):
     #Run one step for given action and return data.
         observation_n, reward_n, done_n, info = self.env.step(action_n)
-        observation_n = np.expand_dims(observation_n, axis=0) 
+        observation_n = np.expand_dims(observation_n, axis=1) #old axis=0 
         return observation_n, reward_n, done_n, info
     
     def run(self, num_episodes=100, render=False, checkpoint=False, cp_render=False, cp_interval=None, otype='AVI', n_intelligent_agents = 1):
@@ -227,17 +227,17 @@ class DDDQNAgent(object):
 
                 obs_n, reward_n, done_n, info = self.step(action_n) #perform action
                 #for i in range(self.env.n_agents): #TODO should the score be the cumulative score of all agents or just agent 0(the intelligent one)?
-                score += reward #cumulative score for episode
-                reward = np.clip(reward, -1.0, 1.0).item() #clip reward to range [-1.0, 1.0]
+                score += reward_n[0] #cumulative score for episode
+                reward = np.clip(reward_n[0], -1.0, 1.0).item() #clip reward to range [-1.0, 1.0]
                 #if LIVES is None: LIVES = info['lives'] #get starting lives
                 #if info['lives'] < LIVES: done = True #flag for reset when dead
-                self.remember(action_n[0], obs_n[0], reward_n[0], done_n[0]) #store results
+                self.remember(action_n[0], obs_n[0], reward, done_n[0]) #store results
                 self.steps += 1 #increment steps
                 self.update_target() #update target network (update_every)
                 self.learn() #fit q model (learn_every)
 
                 if render: self.env.render()
-                if done:
+                if all(done_n):
                     scores.append(score) #store scores for all epsisodes
                     self.reset()
                     break

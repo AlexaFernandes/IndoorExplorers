@@ -37,14 +37,15 @@ class IndoorExplorers(gym.Env):
         # assert 0 < agent_view_mask[0] <= grid_shape[0], 'agent view mask has to be within (0,{}]'.format(grid_shape[0])
         # assert 0 < agent_view_mask[1] <= grid_shape[1], 'agent view mask has to be within (0,{}]'.format(grid_shape[1])
         self.conf=conf
-        self._grid_shape = conf["size"] #grid_shape #tem os mesmos valores que conf["size"]
-        self.n_agents = conf["n_agents"] 
+        self._grid_shape = self.conf["size"] #grid_shape #tem os mesmos valores que conf["size"]
+        self.n_agents = self.conf["n_agents"] 
         self.agents = self.create_agents() #TODO verificar se é preciso inicializar mais alguma coisa nesta função
-        self._max_steps = conf["max_steps"]
+        self._max_steps = self.conf["max_steps"]
         self._step_count = None
         self._steps_beyond_done = None
         self._penalty = penalty
         self._step_cost = step_cost
+        self.movementCost = self.conf["movementCost"]
         #self._prey_capture_reward = prey_capture_reward
         #self._agent_view_mask = agent_view_mask
 
@@ -643,7 +644,7 @@ class IndoorExplorers(gym.Env):
         else:
             pastExploredCells = np.count_nonzero(self.agents[agent_i].pastExploredMap)
             currentExploredCells = np.count_nonzero(self.agents[agent_i].exploredMap)
-        reward= 0
+        reward = 0
 
         #does this ever happen? since we check is the action is valid before it is taken? 
         if self.agents[agent_i].collision: 
@@ -652,7 +653,7 @@ class IndoorExplorers(gym.Env):
             reward = self.conf["out_of_bounds_reward"]
 
         #CONFIRM!!
-        return reward + 10(currentExploredCells - pastExploredCells) - self._step_cost
+        return reward + 10*(currentExploredCells - pastExploredCells) - self.movementCost
 
 
 class Agent(object):
