@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 class Lidar:
 
     def __init__(self, r=np.inf, fov=[0,2*np.pi], channels=8,
-                 resolution = 200, map=None):
+                 resolution = 200, _map=None):
         # channels --> number of arrays per scan
         self.maxRange = r
         self.fov = fov
@@ -14,7 +14,7 @@ class Lidar:
         self.threshold = np.sqrt(2*0.5**2)
 
         self.resolution = resolution
-        self.map = map
+        self.map = _map
 
 
     def update(self, position):
@@ -23,12 +23,12 @@ class Lidar:
         self.ranges_to_idx(position)
 
 
-    def scan(self, position, map=None, resolution=None, dtype=int):
+    def scan(self, position, _map=None, resolution=None, dtype=int):
         # position --> (height, width) of sensor position (robots)
         # map --> ground truth, with FULL visibility
 
-        if map == None:
-            map = self.map
+        if _map == None:
+            _map = self.map
 
         if resolution == None:
             resolution = self.resolution
@@ -45,8 +45,8 @@ class Lidar:
         rX = np.round(rX).astype(dtype)
         rY = np.round(rY).astype(dtype)
 
-        rX = np.clip(rX, 0, map.shape[0] - 1)
-        rY = np.clip(rY, 0, map.shape[1] - 1)
+        rX = np.clip(rX, 0, _map.shape[0] - 1)
+        rY = np.clip(rY, 0, _map.shape[1] - 1)
 
         rays = np.stack((rX, rY), axis=2)
         # XXX: consider using np.unique(rays, axis=0?) to avoid repetition
@@ -55,10 +55,10 @@ class Lidar:
 
         for channel in range(self.channels):
 
-            rays_channel = np.clip(rays[:,channel,:], 0, np.min(map.shape))
+            rays_channel = np.clip(rays[:,channel,:], 0, np.min(_map.shape))
 
             # where the channel's ray is in obstacle
-            obstacles_idx = np.where(map[rays_channel[:,0], rays_channel[:,1]])[0]
+            obstacles_idx = np.where(_map[rays_channel[:,0], rays_channel[:,1]])[0]
             # import pdb; pdb.set_trace()
             if obstacles_idx.size>0:
                 p1_repeated = np.tile(p1, (obstacles_idx.size,1))

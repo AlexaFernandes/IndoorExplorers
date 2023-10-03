@@ -22,7 +22,6 @@ from multi_agent.settings import DEFAULT_CONFIG
 
 logger = logging.getLogger(__name__)
 
-RANDOM_SPAWN=False #TODO colocar no ficheiro depois
 
 class IndoorExplorers(gym.Env):
     metadata = {'render.modes': ['human', 'rgb_array']}
@@ -57,9 +56,10 @@ class IndoorExplorers(gym.Env):
         self.lidar_map = None # with no agents, just the walls
                               # lidar map --> 1.0 obstacle
                               #               0.0 free
-        self.groundTruthMap = self.__create_grid()  #map fully explored aka the ground truth to be compared  to -> 0.3 explored , 0.5 walls
+        self.groundTruthMap = np.full(self._grid_shape, 0.0) #map fully explored aka the ground truth to be compared  to -> 0.3 explored , 0.5 walls
                                                     # ground truth map --> 0.5 obstacle
                                                     #                      0.3 empty/explored
+                                                    #old: #= self.__create_grid() 
         self._full_obs = np.full(self._grid_shape, PRE_IDS['unexplored']) #map wit overall view from every agent - the global map
                                                                           #it starts totally unexplored
                                                                           # _full_obs --> 0.5 obstacle
@@ -112,7 +112,7 @@ class IndoorExplorers(gym.Env):
     #checks if is a wall in pos
     def does_wall_exists(self, pos):
         row, col = pos
-        return (self.groundTruthMap[row,col] == 1.0)
+        return (self.groundTruthMap[row,col] == 0.5)
         #return PRE_IDS['wall'] in self._base_grid[row, col]
 
     #checks if cell is valid (aka inside bounds)
@@ -120,7 +120,12 @@ class IndoorExplorers(gym.Env):
         return (0 <= pos[0] < self._grid_shape[0]) and (0 <= pos[1] < self._grid_shape[1])
 
     #checks if it's inside bounds and there is no wall in pos
-    def is_cell_spawnable(self, pos):
+    def is_cell_spawnable(self, pos, agent_i):
+        #if the pos is already take by another agent
+        for i in range(agent_i):
+            if self.agents[i].pos == pos:
+                return False        
+        #otherwise if it is within bounds and no obstacle is there
         return self.is_valid(pos) and (not self.does_wall_exists(pos))
 
     #checks if cell is inside bounds and is vacant
@@ -244,7 +249,7 @@ class IndoorExplorers(gym.Env):
         return    
 
     def __create_grid(self):
-        gen = Generator(self.conf)
+        gen = Generator(self.conf) #generates map with 1's and 0's
         randomMap = gen.get_map().astype(np.double)
 
         #save lidar map
@@ -271,6 +276,7 @@ class IndoorExplorers(gym.Env):
 
         #update every agent's explored map and _full_obs
         self._updateMaps()
+        #printAgentsMaps(self.agents,self.n_agents)
 
         #update comms matrix
         self.update_comm_range()
@@ -337,7 +343,7 @@ class IndoorExplorers(gym.Env):
         #create an array of lidar, one per agent
         self.ldr = [Lidar(r=self.conf["lidar_range"],
                          channels=self.conf["lidar_channels"],
-                         map=self.lidar_map, fov = [0,np.pi/2])                     for _ in range(self.n_agents)]
+                         _map=self.lidar_map)                   for _ in range(self.n_agents)]
         
         #create list of obstacle indexes
         obstacles_idx = np.where(self.groundTruthMap == 1.0)
@@ -352,7 +358,7 @@ class IndoorExplorers(gym.Env):
         for agent_i in range(self.n_agents):
             self.agents[agent_i].pastExploredMap = self.agents[agent_i].exploredMap.copy()
 
-            lidarX= self.lidarsIndexes[agent_i][:,0]
+            lidarX = self.lidarsIndexes[agent_i][:,0]
             lidarY = self.lidarsIndexes[agent_i][:,1]
 
             #update what lidars has scanned
@@ -391,7 +397,7 @@ class IndoorExplorers(gym.Env):
             # 0 if not visible/visited, 1 if visible/visited
             self.agents[agent_i].exploredMap = np.zeros(self._grid_shape, dtype=np.double) #exploredMaps[agent_i] = np.zeros(self.SIZE, dtype=np.double)
 
-            if RANDOM_SPAWN: random_spawn=True
+            if self.conf["random_spawn"]: random_spawn=True
             else: random_spawn = False
 
             while True:
@@ -401,14 +407,14 @@ class IndoorExplorers(gym.Env):
                 else:
                     pos = self.conf["initial"][agent_i]
 
-                if self.is_cell_spawnable(pos):
-                    self.agents[agent_i].pos = pos #agent_pos[agent_i] = pos
+                if self.is_cell_spawnable(pos, agent_i):
+                    self.agents[agent_i].pos = pos 
                     break
                 else:
                     #set flag to generate a new possible spawn position
                     random_spawn=True
             #reset spawn flag
-            random_spawn=RANDOM_SPAWN
+            random_spawn=self.conf["random_spawn"]
         
         #this replaces the two commented lines (activateLidar + _updateMaps + update_comms)
         self.__update_agents_view()
@@ -429,7 +435,6 @@ class IndoorExplorers(gym.Env):
         #activa os lidars e dá update dos explored maps de cada um 
         #com base no que cada um consegue ver e na matrix de comms
         self.__init_full_obs()
-
         groups_in_range = []
         groups_in_range = self.connectedComponents()
         #print("Reset: groups in range: {}".format(groups_in_range))
@@ -484,8 +489,8 @@ class IndoorExplorers(gym.Env):
         rewards = [self._computeReward(agent_i) for agent_i in range(self.n_agents)]
 
 
-        #check if max steps as been reached or the all map as been explored
-        if (self._step_count >= self._max_steps) or (0.0 not in self._full_obs):  #old: or (True not in self._prey_alive):
+        #check if max steps as been reached or 90% of the map has been explored
+        if (self._step_count >= self._max_steps) or (np.count_nonzero(self._full_obs) > 0.90*(self._grid_shape[0]*self._grid_shape[1])):#(0.0 not in self._full_obs):  #old: or (True not in self._prey_alive):
             for i in range(self.n_agents):
                 self.agents[i].done = True  #_agent_dones[i] = True
 

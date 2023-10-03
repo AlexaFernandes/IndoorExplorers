@@ -62,7 +62,7 @@ class DDDQNAgent(object):
     #Build the gym environment.
         #env = retro.make(game=self.game, state=retro.State.DEFAULT, scenario='scenario',
         #                 record=False, obs_type=retro.Observations.IMAGE)
-        env = gym.make('multi_agent:IndoorExplorers48x48-v0', conf=conf) 
+        env = gym.make('multi_agent:IndoorExplorers21x21-v0', conf=conf) 
         #env = ExplorerConfs()  
         #env = Discretizer(env, combos=self.combos)
         if time_limit is not None: env = TimeLimit(env, time_limit)
@@ -106,19 +106,20 @@ class DDDQNAgent(object):
         #print("remember self.state.shape {}, NDIM {}".format(self.state.shape, self.state.ndim))
         if self.state.ndim > 4: #this happens when we do reset, and we only need the info from agent 0 to remember
             self.memory.append([self.state[0], action, next_state, reward, done])
-            print(" WRONG DIMENSION SQUEEZE PERFORMED self.state.shape {}".format(self.state.shape))
-        else:
+            #print(" WRONG DIMENSION self.state[0].shape used {}".format(self.state[0].shape))
+        else: #em principio nunca entrará aqui
+            print("Não era suposto!")
             self.memory.append([self.state, action, next_state, reward, done])
-        self.state = next_state
+        #self.state = next_state
 
-    def choose_action(self, training):
+    def choose_action(self, training, agent_i): #TODO add index of agent_i
     #Predict next action based on current state and decay epsilon.
         if training: #when training allow random exploration
             if np.random.random() < self.epsilon: #get random action
                 action = np.random.randint(self.num_actions)
                 #print("random action {}".format(action))
             else: #predict best actions
-                action = np.argmax(self.q_eval.predict(self.state)[0])
+                action = np.argmax(self.q_eval.predict(self.state[agent_i])[0])
             #decay epsilon, if epsilon falls below min then set to min
             if self.epsilon > self.epsilon_min:
                 self.epsilon *= self.epsilon_decay
@@ -126,7 +127,7 @@ class DDDQNAgent(object):
                 self.epsilon = self.epsilon_min
                 print('Epsilon mininum of {} reached'.format(self.epsilon_min))
         else: #if not training then always get best action
-            action = np.argmax(self.q_eval.predict(self.state)[0])
+            action = np.argmax(self.q_eval.predict(self.state[agent_i])[0]) #TODO add index agent_i to the state!
             print("argmax {}".format(action))
         return action
                 
@@ -223,7 +224,7 @@ class DDDQNAgent(object):
         scores = []
         action_n = [None, None, None, None]
         self.reset()
-        self.state = self.state[0] #since we only want to train agent 0, we only need agent's 0 observations
+        #self.state = self.state#[0] #since we only want to train agent 0, we only need agent's 0 observations
         for e in range(1, num_episodes + 1):
             score = 0
             done_n = [False for _ in range(self.env.n_agents)]
@@ -233,7 +234,7 @@ class DDDQNAgent(object):
             while True:
                 #for now it will only be 1 intelligent agent (TODO adapt for variable number of intelligent agents)
                 for i in range(n_intelligent_agents):
-                    action_n[i] = self.choose_action(training=True) #predict action
+                    action_n[i] = self.choose_action(training=True, agent_i=i) #predict action
                 for i in range(n_intelligent_agents, self.env.n_agents):
                     action_n[i] = np.random.randint(self.num_actions)
                 
@@ -249,6 +250,7 @@ class DDDQNAgent(object):
                 #if LIVES is None: LIVES = info['lives'] #get starting lives
                 #if info['lives'] < LIVES: done = True #flag for reset when dead
                 self.remember(action_n[0], obs_n[0], reward, done_n[0]) #store results
+                self.state = obs_n #update state 
                 self.steps += 1 #increment steps
                 self.update_target() #update target network (update_every)
                 self.learn() #fit q model (learn_every)
@@ -257,7 +259,7 @@ class DDDQNAgent(object):
                 if all(done_n):
                     scores.append(score) #store scores for all epsisodes
                     self.reset()
-                    self.state = self.state[0] #since we only want to train agent 0, we only need agent's 0 observations
+                    self.state = self.state#[0] #since we only want to train agent 0, we only need agent's 0 observations
                     break
             elapsed_time = round((time() - start_time)/60, 2)        
             print(printSTR.format(e, num_episodes, round(score, 4), np.average(scores[-50:]), elapsed_time))
@@ -283,16 +285,17 @@ class DDDQNAgent(object):
     #Run an episode and return the score and frames.
         frames = []
         score = 0
+        action_n = [None, None, None, None]
         self.reset()
         while True:
             for i in range(self.env.n_agents):
-                action_n[i] = self.choose_action(training=False) #get best action for each agent
+                action_n[i] = self.choose_action(training=False, agent_i=i) #get best action for each agent
             observation_n, reward_n, done_n, info = self.step(action_n) #perform action
             self.state = observation_n #update current state
             score += np.sum(reward_n) #cumulative score for episode for all agents
             if render: self.env.render()
             frames.append(self.env.render(mode='rgb_array'))
-            if done:
+            if all(done_n):
                 self.reset()
                 break
         return score, frames
@@ -306,13 +309,13 @@ class DDDQNAgent(object):
         self.reset()
         while True:
             for i in range(self.env.n_agents):
-                action_n = self.choose_action(training=False) #get best action
+                action_n = self.choose_action(training=False, agent_i=i) #get best action
             observation_n, reward_n, done_n, info = self.step(action_n) #perform actions
             self.state = observation_n #update current state
             score += np.sum(reward) #cumulative score for episode
             if render: self.env.render()
             if render_and_save: frames.append(self.env.render(mode='rgb_array'))
-            if done:
+            if all(done_n):
                 print('Finished! Score: {}'.format(score))
                 self.reset()
                 break
