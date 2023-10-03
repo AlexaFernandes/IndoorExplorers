@@ -93,12 +93,12 @@ class IndoorExplorers(gym.Env):
             self.observation_space = MultiAgentObservationSpace(
                 [spaces.Box(self._obs_low, self._obs_high, (self._grid_shape[0], self._grid_shape[1],1)) for _ in range(self.n_agents+1)]) #one map for each agent  + 1 (_full_obs)
         else:
-            #highest value that can be observed in each cell is the 255
-            self._obs_high = np.full((self._grid_shape[0], self._grid_shape[1],1), np.array(255, dtype=np.uint8)) 
-            #lowest value that can be observed in each cell is 0.0
-            self._obs_low = np.full((self._grid_shape[0], self._grid_shape[1],1), np.array(0, dtype=np.uint8))
+            #highest value that can be observed in each cell is the max. agent id
+            self._obs_high = np.full((self._grid_shape[0], self._grid_shape[1],1), np.array(self.n_agents, dtype=np.float32)) 
+            # #lowest value that can be observed in each cell is 0.0
+            self._obs_low = np.full((self._grid_shape[0], self._grid_shape[1],1),np.array(0.0, dtype=np.float32))
             self.observation_space = MultiAgentObservationSpace(
-                [spaces.Box(self._obs_low, self._obs_high, (self._grid_shape[0], self._grid_shape[1],1)) for _ in range(self.n_agents)])
+                [spaces.Box(self._obs_low, self._obs_high, (self._grid_shape[0], self._grid_shape[1],1)) for _ in range(self.n_agents)]) #one map for each agent  (+ 1 (_full_obs)??)
         
         self._total_episode_reward = None
         self.seed()
