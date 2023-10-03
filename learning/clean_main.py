@@ -16,7 +16,7 @@ if __name__ == '__main__':
     dddqn.q_target.summary()
     
     #train agent
-    dddqn.run(num_episodes=10000,  render=False, checkpoint=True, cp_interval=200, cp_render=True, n_intelligent_agents = 1)
+    dddqn.run(num_episodes=100,  render=True, checkpoint=True, cp_interval=20, cp_render=True, n_intelligent_agents = 1)
     
     #load model
     dddqn.load('models')#, 'DDDQN_1000_IndoorExplorers_09222023161252_QEval.h5', 'DDDQN_1000_IndoorExplorers_09222023161252_QTarget.h5')

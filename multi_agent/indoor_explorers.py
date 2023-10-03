@@ -87,9 +87,9 @@ class IndoorExplorers(gym.Env):
         
         if conf["approach"] == True: #If it is the centralized approach, then we only need the _full_obs TODO check!!
             #highest value that can be observed in each cell is the 255
-            self._obs_high = np.full((self._grid_shape[0], self._grid_shape[1],1), np.array(255, dtype=np.uint8)) 
+            self._obs_high = np.full((self._grid_shape[0], self._grid_shape[1],1), np.array(self.n_agents, dtype=np.uint8)) 
             #lowest value that can be observed in each cell is 0.0
-            self._obs_low = np.full((self._grid_shape[0], self._grid_shape[1],1), np.array(0, dtype=np.uint8))
+            self._obs_low = np.full((self._grid_shape[0], self._grid_shape[1],1), np.array(0,0, dtype=np.uint8))
             self.observation_space = MultiAgentObservationSpace(
                 [spaces.Box(self._obs_low, self._obs_high, (self._grid_shape[0], self._grid_shape[1],1)) for _ in range(self.n_agents+1)]) #one map for each agent  + 1 (_full_obs)
         else:
@@ -141,7 +141,8 @@ class IndoorExplorers(gym.Env):
                     elif self.agents[agent_i].pastExploredMap[row][col] >= 1.0:
                         #if it is not in range, mark the cell as explored/empty
                         if (self.agents[agent_i].pastExploredMap[row][col]-1) not in agent_list:
-                            print("{} out of range of {}".format(self.agents[agent_i].pastExploredMap[row][col]-1, agent_i))
+                            if self.conf["viewer"]["print_prompts"]:
+                                print("{} out of range of {}".format(self.agents[agent_i].pastExploredMap[row][col]-1, agent_i))
                             new_merged_map[row][col] = 0.3
         
         #save the positions of all agents in range in the end, so their position isn't lost
@@ -431,7 +432,7 @@ class IndoorExplorers(gym.Env):
 
         groups_in_range = []
         groups_in_range = self.connectedComponents()
-        print("Reset: groups in range: {}".format(groups_in_range))
+        #print("Reset: groups in range: {}".format(groups_in_range))
         for group in groups_in_range:
             self.merge_maps(group)
 
@@ -442,7 +443,8 @@ class IndoorExplorers(gym.Env):
         #old: _agent_dones = [False for _ in range(self.n_agents)] -> done in reset_agents a few lines up
         #save the initial state for future comparison
         self.past_full_obs = self._full_obs.copy()
-        print("reset done")
+        if self.conf["viewer"]["print_prompts"]:
+            print("reset done")
         return self.get_agents_obs()
 
     #CONFIRMAR!!
@@ -451,7 +453,8 @@ class IndoorExplorers(gym.Env):
             "Call reset before using step method."
 
         self._step_count += 1
-        print("Start of step {}".format(self._step_count))
+        if self.conf["viewer"]["print_prompts"]:
+            print("Start of step {}".format(self._step_count))
         # #communicate maps
         # #check if they are in comm range and then change info
         # groups_in_range = []
@@ -471,7 +474,8 @@ class IndoorExplorers(gym.Env):
         #check if they are in comm range and then change info
         groups_in_range = []
         groups_in_range = self.connectedComponents()
-        print("after actions, groups in range: {}".format(groups_in_range))
+        if self.conf["viewer"]["print_prompts"]:
+            print("after actions, groups in range: {}".format(groups_in_range))
         for group in groups_in_range:
             self.merge_maps(group)
 

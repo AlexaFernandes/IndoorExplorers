@@ -103,7 +103,12 @@ class DDDQNAgent(object):
     
     def remember(self, action, next_state, reward, done):
     #Store data in memory and update current state.
-        self.memory.append([self.state, action, next_state, reward, done])
+        #print("remember self.state.shape {}, NDIM {}".format(self.state.shape, self.state.ndim))
+        if self.state.ndim > 4: #this happens when we do reset, and we only need the info from agent 0 to remember
+            self.memory.append([self.state[0], action, next_state, reward, done])
+            print(" WRONG DIMENSION SQUEEZE PERFORMED self.state.shape {}".format(self.state.shape))
+        else:
+            self.memory.append([self.state, action, next_state, reward, done])
         self.state = next_state
 
     def choose_action(self, training):
@@ -130,7 +135,15 @@ class DDDQNAgent(object):
         if len(self.memory) < self.batch_size or self.steps % self.learn_every != 0: return
         #sample memory for a minibatch
         mini_batch = sample(self.memory, self.batch_size)
+        # for el in mini_batch:
+        #     print(el[0].shape)
+        #     print(el[1])
+        #     print(el[2].shape)
+        #     print(el[3])
+        #     print(el[4])
         #separate minibatch into elements
+        # for i in zip(*mini_batch):
+        #     state, action, next_state, reward, done = np.squeeze(i)
         state, action, next_state, reward, done = [np.squeeze(i) for i in zip(*mini_batch)]
         state = np.expand_dims(state, axis=3)
         next_state = np.expand_dims(next_state, axis=3)
@@ -187,6 +200,7 @@ class DDDQNAgent(object):
     def reset(self):
     #Reset environment and return expanded state.
         self.state = np.expand_dims(self.env.reset(), axis=1) #old axis=0 
+        #print("reset self.state.shape {}".format(self.state.shape))
 
     def close(self):
     #Close the environment.
@@ -209,6 +223,7 @@ class DDDQNAgent(object):
         scores = []
         action_n = [None, None, None, None]
         self.reset()
+        self.state = self.state[0] #since we only want to train agent 0, we only need agent's 0 observations
         for e in range(1, num_episodes + 1):
             score = 0
             done_n = [False for _ in range(self.env.n_agents)]
@@ -222,10 +237,12 @@ class DDDQNAgent(object):
                 for i in range(n_intelligent_agents, self.env.n_agents):
                     action_n[i] = np.random.randint(self.num_actions)
                 
-                print("\u001b[34m {}\u001b[34m,\033[91m {}\033[00m,\u001b[32m {}\u001b[32m,\u001b[33m {}\u001b[33m" .format(ACTION_MEANING[action_n[0]], ACTION_MEANING[action_n[1]],ACTION_MEANING[action_n[2]],ACTION_MEANING[action_n[3]]))
-                print(Style.RESET_ALL)
+                if self.env.conf["viewer"]["print_prompts"]:
+                    print("\u001b[34m {}\u001b[34m,\033[91m {}\033[00m,\u001b[32m {}\u001b[32m,\u001b[33m {}\u001b[33m" .format(ACTION_MEANING[action_n[0]], ACTION_MEANING[action_n[1]],ACTION_MEANING[action_n[2]],ACTION_MEANING[action_n[3]]))
+                    print(Style.RESET_ALL)
 
                 obs_n, reward_n, done_n, info = self.step(action_n) #perform action
+                #print("obs_n.shape {}".format(obs_n.shape))
                 #for i in range(self.env.n_agents): #TODO should the score be the cumulative score of all agents or just agent 0(the intelligent one)?
                 score += reward_n[0] #cumulative score for episode
                 reward = np.clip(reward_n[0], -1.0, 1.0).item() #clip reward to range [-1.0, 1.0]
@@ -240,6 +257,7 @@ class DDDQNAgent(object):
                 if all(done_n):
                     scores.append(score) #store scores for all epsisodes
                     self.reset()
+                    self.state = self.state[0] #since we only want to train agent 0, we only need agent's 0 observations
                     break
             elapsed_time = round((time() - start_time)/60, 2)        
             print(printSTR.format(e, num_episodes, round(score, 4), np.average(scores[-50:]), elapsed_time))
