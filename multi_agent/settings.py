@@ -7,23 +7,23 @@ DEFAULT_CONFIG={
     #  general configuration for the topology of operational area
     "random_spawn": True, # if set to true, initial pos are ignored
     "initial": [ [0,0],
-                 [0,47],
-                 [47,0],
-                 [47,47]
+                 [0,2],
+                 [3,0],
+                 [3,1]
                 ],
     # "initial": {0: [0,0],
     #             1: [0,20],
     #             2 :[20,0],
     #             3: [20,20]
     #             },
-    "size":[21,21],
+    "size":[16,16],
     #  configuration regarding the movements of uav
     "movementCost":0.5,
 
     # ======== ENVIROMENT =======
     # configuration regarding the random map generation
     # absolute number of obstacles, randomly placed in env
-    "obstacles":20,
+    "obstacles":5,
     # if rows/colums activated the obstacles will be placed in a semi random
     # spacing
     "number_rows":None,

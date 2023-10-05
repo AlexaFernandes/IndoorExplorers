@@ -26,6 +26,7 @@ from learning.dddqn_utils import convert_frames, Now, get_latest_file #My utilit
 #from indoor_explorers.envs.explorerConf import ExplorerConf
 from multi_agent.settings import DEFAULT_CONFIG as conf
 from multi_agent.indoor_explorers import IndoorExplorers
+from multi_agent.utils.multi_printMaps import *
 
 class DDDQNAgent(object):
     def __init__(self, game, combos, time_limit=None, batch_size=32, learn_every=10, update_every=10000,
@@ -62,7 +63,8 @@ class DDDQNAgent(object):
     #Build the gym environment.
         #env = retro.make(game=self.game, state=retro.State.DEFAULT, scenario='scenario',
         #                 record=False, obs_type=retro.Observations.IMAGE)
-        env = gym.make('multi_agent:IndoorExplorers21x21-v0', conf=conf) 
+        env_name = "multi_agent:{}-v0".format(self.game)
+        env = gym.make(env_name, conf=conf) #'multi_agent:IndoorExplorers21x21-v0'
         #env = ExplorerConfs()  
         #env = Discretizer(env, combos=self.combos)
         if time_limit is not None: env = TimeLimit(env, time_limit)
@@ -224,6 +226,7 @@ class DDDQNAgent(object):
         scores = []
         action_n = [None, None, None, None]
         self.reset()
+        if render: self.env.render()
         #self.state = self.state#[0] #since we only want to train agent 0, we only need agent's 0 observations
         for e in range(1, num_episodes + 1):
             score = 0

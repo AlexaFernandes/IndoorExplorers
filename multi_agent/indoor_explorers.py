@@ -4,6 +4,7 @@ import logging
 import gym
 import numpy as np
 from PIL import ImageColor
+from colorama import Fore, Back, Style
 from gym import spaces
 from gym.utils import seeding
 import itertools
@@ -130,7 +131,7 @@ class IndoorExplorers(gym.Env):
 
     #checks if cell is inside bounds and is vacant
     def _is_cell_vacant(self, pos):
-        return self.is_valid(pos) and (self._full_obs[pos[0]][pos[1]] == PRE_IDS['empty/explored'])
+        return (self.is_valid(pos) and (self._full_obs[pos[0]][pos[1]] == PRE_IDS['empty/explored']))
 
     #receives a list of agents that are in comm range that want to merge their maps
     def merge_maps(self, agent_list):
@@ -295,7 +296,7 @@ class IndoorExplorers(gym.Env):
         elif move == 3:  # right
             next_pos = [curr_pos[0], curr_pos[1] + 1]
         elif move == 4:  # no-op
-            pass
+            next_pos = [curr_pos[0], curr_pos[1]]
         else:
             raise Exception('Action Not found!')
 
@@ -355,6 +356,7 @@ class IndoorExplorers(gym.Env):
     #CONFIRM!!
     def _updateMaps(self):
         self.past_full_obs = self._full_obs.copy()
+        #update maps with lidar info
         for agent_i in range(self.n_agents):
             self.agents[agent_i].pastExploredMap = self.agents[agent_i].exploredMap.copy()
 
@@ -365,9 +367,11 @@ class IndoorExplorers(gym.Env):
             self.agents[agent_i].exploredMap[lidarX, lidarY] = self.groundTruthMap[lidarX, lidarY] 
             self._full_obs[lidarX, lidarY] = self.groundTruthMap[lidarX, lidarY]
 
-            #update agents pos:
-            self.agents[agent_i].exploredMap[self.agents[agent_i].pos[0],[self.agents[agent_i].pos[1]]] = agent_i + 1 
-            self._full_obs[self.agents[agent_i].pos[0]][self.agents[agent_i].pos[1]] = agent_i + 1 #note that here we sum 1
+        #update agents pos: -> needs to be done after so the lidar info does not override the pos of agents in _full_obs
+        for agent_i in range(self.n_agents):
+            self.agents[agent_i].exploredMap[self.agents[agent_i].pos[0],[self.agents[agent_i].pos[1]]] = (agent_i + 1) 
+            self._full_obs[self.agents[agent_i].pos[0]][self.agents[agent_i].pos[1]] = (agent_i + 1) #note that here we sum 1
+            #print(np.where(self._full_obs==(agent_i+1)))
 
     #CONFIRM!!
     def _activateLidars(self):
@@ -437,7 +441,7 @@ class IndoorExplorers(gym.Env):
         self.__init_full_obs()
         groups_in_range = []
         groups_in_range = self.connectedComponents()
-        #print("Reset: groups in range: {}".format(groups_in_range))
+        
         for group in groups_in_range:
             self.merge_maps(group)
 
@@ -472,7 +476,8 @@ class IndoorExplorers(gym.Env):
         for agent_i, action in enumerate(agents_action):
             if not (self.agents[agent_i].done): #_agent_dones[agent_i]):
                 self.__update_agent_pos(agent_i, action)
-
+                #print("{} {} {}".format(TEXT_AGENT_COLORS[agent_i],self.agents[agent_i].pos,TEXT_AGENT_COLORS[agent_i]))
+        #print(Style.RESET_ALL)  
         #print(self.comm_range)
 
         #communicate maps
@@ -712,6 +717,7 @@ class Agent(object):
 
 
 AGENT_COLORS = [(30, 150, 245),(220, 10, 10),(0, 204, 0),(255, 215, 0)]
+TEXT_AGENT_COLORS = ["\u001b[34m ", "\033[91m", "\u001b[32m", "\u001b[33m"]
 AGENT_NEIGHBORHOOD_COLOR = (186, 238, 247)
 UNEXPLORED_COLOR = ImageColor.getcolor('lightgrey', mode='RGB')
 

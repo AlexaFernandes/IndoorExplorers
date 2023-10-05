@@ -8,6 +8,15 @@ import itertools
 from multi_agent.utils.multi_printMaps import printMap
 from itertools import combinations
 
+
+PRE_IDS = {
+    'agent': 'A',
+    'wall': 0.5,
+    'unexplored': 0.0,
+    'empty/explored': 0.3
+}
+
+
 class Agent(object):
     def __init__(self):
         super(Agent, self).__init__()
@@ -53,6 +62,11 @@ def change_dones(agents):
 def get_agents_dones():
     return [agent.done for agent in agents]
 
+def is_valid(mat, pos):
+        return (0 <= pos[0] < mat.shape[0]) and (0 <= pos[1] < mat.shape[1])
+
+def _is_cell_vacant(mat , pos):
+        return (is_valid(mat,pos) and (mat[pos[0]][pos[1]] == PRE_IDS['empty/explored']))
 
 def merge_maps(maps, agent_list):
         new_merged_map = np.full(maps[0].shape, 0.0)
@@ -196,25 +210,27 @@ if __name__ == "__main__":
                     [0.0, 0.0, 0.0, 0.0]
                 ])
 
-    free_x, free_y = np.where(mat1 == 0.3)
+    print(_is_cell_vacant(mat1, [2,2]))
+
+    #free_x, free_y = np.where(mat1 == 0.3)
     #print(free_x,free_y)#, free_z)
 
-    mat2 =np.array([ [0.0, 0.0, 0.3 , 2.0],
-                     [0.0, 0.0, 4.0, 0.3 ],
-                     [0.0, 0.0, 0.0, 0.0],
-                     [0.0, 0.0, 0.0, 0.0]
-                ])
+    # mat2 =np.array([ [0.0, 0.0, 0.3 , 2.0],
+    #                  [0.0, 0.0, 4.0, 0.3 ],
+    #                  [0.0, 0.0, 0.0, 0.0],
+    #                  [0.0, 0.0, 0.0, 0.0]
+    #             ])
 
-    mat3 =np.array([ [0.0, 0.0, 0.0 , 0.0],
-                     [0.0, 0.0, 0.0, 0.0 ],
-                     [0.5, 0.5, 0.0, 0.0],
-                     [3.0, 0.3, 0.0, 0.0]
-                ])
+    # mat3 =np.array([ [0.0, 0.0, 0.0 , 0.0],
+    #                  [0.0, 0.0, 0.0, 0.0 ],
+    #                  [0.5, 0.5, 0.0, 0.0],
+    #                  [3.0, 0.3, 0.0, 0.0]
+    #             ])
 
-    maps= [mat1,mat2,mat3]
+    # maps= [mat1,mat2,mat3]
 
-    observation_n = np.expand_dims(maps, axis=0) 
-    print(observation_n.shape)
+    # observation_n = np.expand_dims(maps, axis=0) 
+    # print(observation_n.shape)
     
 
     # agent_list = [0,1,2]
@@ -283,3 +299,8 @@ if __name__ == "__main__":
     for group in groups:
         print(group)
     
+
+
+
+
+

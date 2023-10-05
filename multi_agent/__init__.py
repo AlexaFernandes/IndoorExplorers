@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 #     )
 
 # add new environments : iterate over full observability
-for game_info in [[(21, 21), 2], [(21, 21), 4],[(48, 48), 4]]:  # [(grid_shape, predator_n, prey_n),..]
+for game_info in [[(16, 16), 4],[(21, 21), 2], [(21, 21), 4],[(48, 48), 4]]:  # [(grid_shape, predator_n, prey_n),..]
     grid_shape, n_agents = game_info
     _game_name = 'IndoorExplorers{}x{}'.format(grid_shape[0], grid_shape[1])
 

@@ -55,10 +55,10 @@ def printMap(matrix, n_agents):
             data_3d[i][j] = color_map[matrix[i][j]]
 
     #print numbers inside squares
-    # for i in range(matrix.shape[1]): #collumns
-    #     for j in range(matrix.shape[0]): #rows
-    #         c = matrix[j,i]
-    #         ax.text(i, j, str("%.1f"%c), va='center', ha='center')
+    for i in range(matrix.shape[1]): #collumns
+        for j in range(matrix.shape[0]): #rows
+            c = matrix[j,i]
+            ax.text(i, j, str("%.1f"%c), va='center', ha='center')
 
     ax.set_title("Updated map") #set title name
     values = np.unique(matrix.ravel())
@@ -75,7 +75,7 @@ def printMap(matrix, n_agents):
     else:
         pos=ax.imshow(data_3d,cmap=cmap5) #outra alternativa é o matshow, mas assim o titulo nao aparece
 
-        patches = [ mpatches.Patch(color=colors1[i], label=labels2[i] ) for i in range(n_agents+2)  ]
+        patches = [ mpatches.Patch(color=colors2[i], label=labels2[i] ) for i in range(n_agents+2)  ]
         # put those patched as legend-handles into the legend
         plt.legend(handles=patches, bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0. )
     
@@ -116,7 +116,7 @@ def print2Map(matrix, n_agents, groundTruthMap):
     else:
         pos=ax[0].imshow(data_3d,cmap=cmap5) #outra alternativa é o matshow, mas assim o titulo nao aparece
 
-        patches = [ mpatches.Patch(color=colors1[i], label=labels2[i] ) for i in range(n_agents+2)  ]
+        patches = [ mpatches.Patch(color=colors2[i], label=labels2[i] ) for i in range(n_agents+2)  ]
         # put those patched as legend-handles into the legend
         plt.legend(handles=patches, bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0. )
 
