@@ -18,7 +18,7 @@ DEFAULT_CONFIG={
     #             },
     "size":[16,16],
     #  configuration regarding the movements of uav
-    "movementCost":0.5,
+    "movementCost":5, #it's half of what the rewards for each new cell explored
 
     # ======== ENVIROMENT =======
     # configuration regarding the random map generation

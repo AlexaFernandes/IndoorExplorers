@@ -4,6 +4,7 @@
 from multi_agent.utils.randomMapGenerator import Generator
 from multi_agent.settings import DEFAULT_CONFIG as conf
 import numpy as np
+import random
 import itertools
 from multi_agent.utils.multi_printMaps import printMap
 from itertools import combinations
@@ -204,13 +205,13 @@ if __name__ == "__main__":
 
 
     #-----------------------------------------------------------
-    mat1 =np.array([[1.0, 0.3, 0.0 , 0.0],
-                    [0.3, 0.3, 0.0, 0.0 ],
-                    [0.0, 0.0, 0.0, 2.0],
-                    [0.0, 0.0, 0.0, 0.0]
-                ])
+    # mat1 =np.array([[1.0, 0.3, 0.0 , 0.0],
+    #                 [0.3, 0.3, 0.0, 0.0 ],
+    #                 [0.0, 0.0, 0.0, 2.0],
+    #                 [0.0, 0.0, 0.0, 0.0]
+    #             ])
 
-    print(_is_cell_vacant(mat1, [2,2]))
+    #print(_is_cell_vacant(mat1, [2,2]))
 
     #free_x, free_y = np.where(mat1 == 0.3)
     #print(free_x,free_y)#, free_z)
@@ -272,33 +273,48 @@ if __name__ == "__main__":
 
     #------------------------------------------------
     #test connectivity:
-    matrix =  [ [0, 1, 0, 0],
-                [1, 0, 1, 0],
-                [0, 1, 0, 1],
-                [0, 0, 1, 0]
-                ]
+    # matrix =  [ [0, 1, 0, 0],
+    #             [1, 0, 1, 0],
+    #             [0, 1, 0, 1],
+    #             [0, 0, 1, 0]
+    #             ]
     
-    matrix2 =  [[0, 0, 0, 0],
-                [0, 0, 0, 0],
-                [0, 0, 0, 1],
-                [0, 0, 1, 0]
-                ]
+    # matrix2 =  [[0, 0, 0, 0],
+    #             [0, 0, 0, 0],
+    #             [0, 0, 0, 1],
+    #             [0, 0, 1, 0]
+    #             ]
 
-    matrix3=  np.array([ [0, 1, 1, 1],
-                         [1, 0, 0, 0],
-                         [1, 0, 0, 0],
-                         [1, 0, 0, 0]
-                         ])
-    mat=matrix3         
-    print(mat)
-    comm_range = update_comm_range(agents,4)
+    # matrix3=  np.array([ [0, 1, 1, 1],
+    #                      [1, 0, 0, 0],
+    #                      [1, 0, 0, 0],
+    #                      [1, 0, 0, 0]
+    #                      ])
+    # mat=matrix3         
+    # print(mat)
+    # comm_range = update_comm_range(agents,4)
     
-    print("Groups:")
-    groups=[]
-    groups = connectedComponents(mat,n_agents=4)
-    for group in groups:
-        print(group)
+    # print("Groups:")
+    # groups=[]
+    # groups = connectedComponents(mat,n_agents=4)
+    # for group in groups:
+    #     print(group)
+
+
+#-----------------------------------------------------------------------
     
+
+    action_n=[4,5,6,7]
+    idxs = np.arange(0,len(action_n))
+    action_dict = dict(enumerate(action_n))
+    print(action_dict)
+
+    random.shuffle(idxs)
+    print(idxs)
+
+    for i in range(len(action_n)):
+        print(action_dict[idxs[i]])
+
 
 
 
