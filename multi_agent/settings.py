@@ -3,7 +3,7 @@ DEFAULT_CONFIG={
     #  approach (centralized or not centralized)
     "approach": False,
     #  number of agents
-    "n_agents": 4,
+    "n_agents": 1,
     #  general configuration for the topology of operational area
     "random_spawn": True, # if set to true, initial pos are ignored
     "initial": [ [0,0],
@@ -18,7 +18,7 @@ DEFAULT_CONFIG={
     #             },
     "size":[16,16],
     #  configuration regarding the movements of uav
-    "movementCost":5, #it's half of what the rewards for each new cell explored
+    "movementCost":1, #this is discounted for every time step/every movement made
 
     # ======== ENVIROMENT =======
     # configuration regarding the random map generation

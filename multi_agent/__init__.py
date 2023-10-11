@@ -18,9 +18,11 @@ logger = logging.getLogger(__name__)
 #     )
 
 # add new environments : iterate over full observability
-for game_info in [[(16, 16), 4],[(21, 21), 2], [(21, 21), 4],[(48, 48), 4]]:  
+for game_info in [[(16, 16), 1],[(16, 16), 2],[(16, 16), 4],
+                  [(21, 21), 1], [(21, 21), 2],[(21, 21), 4],
+                  [(200, 200), 1], [(200, 200), 2],[(200, 200), 4]]: 
     grid_shape, n_agents = game_info
-    _game_name = 'IndoorExplorers{}x{}'.format(grid_shape[0], grid_shape[1])
+    _game_name = 'IndoorExplorers{}x{}_{}'.format(grid_shape[0], grid_shape[1], n_agents)
 
     register(
             id='{}-v0'.format(_game_name),

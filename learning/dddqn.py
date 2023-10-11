@@ -145,8 +145,6 @@ class DDDQNAgent(object):
         #     print(el[3])
         #     print(el[4])
         #separate minibatch into elements
-        # for i in zip(*mini_batch):
-        #     state, action, next_state, reward, done = np.squeeze(i)
         state, action, next_state, reward, done = [np.squeeze(i) for i in zip(*mini_batch)]
         state = np.expand_dims(state, axis=3)
         next_state = np.expand_dims(next_state, axis=3)
@@ -209,7 +207,7 @@ class DDDQNAgent(object):
     #Close the environment.
         self.env.close()
 
-    #TODO
+    
     def step(self, action_n):
     #Run one step for given action and return data.
         observation_n, reward_n, done_n, info = self.env.step(action_n)
@@ -224,7 +222,8 @@ class DDDQNAgent(object):
         printSTR = 'Episode: {}/{} | Score: {:.4f} | AVG 50: {:.4f} | Elapsed Time: {} mins'
         start_time = time()
         scores = []
-        action_n = [None, None, None, None]
+        exploration_rate = []
+        action_n = np.full(self.env.n_agents, None)
         self.reset()
         if render: self.env.render()
         #self.state = self.state#[0] #since we only want to train agent 0, we only need agent's 0 observations
@@ -246,18 +245,19 @@ class DDDQNAgent(object):
                     print(Style.RESET_ALL)
 
                 obs_n, reward_n, done_n, info = self.step(action_n) #perform action
-                
-                #for i in range(self.env.n_agents): #TODO should the score be the cumulative score of all agents or just agent 0(the intelligent one)?
+                #print(reward_n)
+                #TODO should the score be the cumulative score of all agents or just agent 0(the intelligent one)?
                 score += reward_n[0] #cumulative score for episode
-                reward = np.clip(reward_n[0], -1.0, 1.0).item() #clip reward to range [-1.0, 1.0]
+                #TODO is this necessary? reward = np.clip(reward_n[0], -1.0, 1.0).item() #clip reward to range [-1.0, 1.0]
                 #if LIVES is None: LIVES = info['lives'] #get starting lives
                 #if info['lives'] < LIVES: done = True #flag for reset when dead
-                self.remember(action_n[0], obs_n[0], reward, done_n[0]) #store results
+                self.remember(action_n[0], obs_n[0], reward_n[0], done_n[0]) #store results
                 self.state = obs_n #update state 
                 self.steps += 1 #increment steps
                 self.update_target() #update target network (update_every)
                 self.learn() #fit q model (learn_every)
 
+                exploration_rate.append(np.count_nonzero(self.env._full_obs)/(self.env._grid_shape[0]*self.env._grid_shape[1]))
                 if render: self.env.render()
                 if all(done_n):
                     scores.append(score) #store scores for all epsisodes
@@ -281,6 +281,7 @@ class DDDQNAgent(object):
                 self.log.append([e, score, np.average(scores[-50:]), elapsed_time, None]) 
         elapsed_time = round((time() - start_time)/60, 2)
         print('Finished training {} episodes in {} minutes.'.format(num_episodes, (time() - start_time)/60))
+        return exploration_rate
     
     #TODO
     #in the evaluation, each agent will use what the agent 0 learnt in training
@@ -288,13 +289,14 @@ class DDDQNAgent(object):
     #Run an episode and return the score and frames.
         frames = []
         score = 0
-        action_n = [None, None, None, None]
+        action_n = np.full(self.env.n_agents, None)
         self.reset()
         if render: self.env.render()
         while True:
             for i in range(self.env.n_agents):
                 action_n[i] = self.choose_action(training=False, agent_i=i) #get best action for each agent
             observation_n, reward_n, done_n, info = self.step(action_n) #perform action
+            #print("evaluate: {}".format(reward_n))
             self.state = observation_n #update current state
             score += np.sum(reward_n) #cumulative score for episode for all agents
             if render: self.env.render()
@@ -310,7 +312,7 @@ class DDDQNAgent(object):
     #The reward for the epsiode is returned.
         frames = []
         score = 0
-        action_n = [None, None, None, None]
+        action_n = np.full(self.env.n_agents, None)
         self.reset()
         if render: self.env.render()
         while True:

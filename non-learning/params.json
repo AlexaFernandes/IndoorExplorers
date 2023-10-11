@@ -22,6 +22,7 @@
                       [20,0],
                       [20,20]
                     ],
+        "random_spawn": true,
         "bonus_reward": 0,
         "collision_reward": -50,
         "lidar_channels": 32,
@@ -65,7 +66,8 @@
           "obstacle_img": "/home/thedarkcurls/GeneralExplorationPolicy/mars-explorer/img/stone_black2.png",
           "title": "Mars-Explorer-V01",
           "width": 630,
-          "print_map": false
+          "print_map": false,
+          "print_prompts": false
         },
         "viwer": {
           "height": 840,

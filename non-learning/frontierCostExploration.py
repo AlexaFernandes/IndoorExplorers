@@ -40,7 +40,7 @@ def get_conf():
     return conf
 
 
-def find_frontiers(obs):
+def find_frontiers(obs, agent_i):
 
     free_x, free_y = np.where(obs == 0.3)
     free_points = np.array(list(zip(free_x, free_y)))
@@ -60,10 +60,35 @@ def find_frontiers(obs):
 
             if test_x>=0 and test_x<obs.shape[0] and test_y>=0 and test_y<obs.shape[1]:
                 if obs[test_x, test_y] == 0.0:
+                    #add calcultate distance
+                    dist = distance.cdist(env.agents[agent_i].pos, (test_x, test_y))
+                    #only append the farthest
                     frontiers.append([free_x, free_y])
                     break
 
     return np.array(frontiers)
+
+def find_frontiers2(obs, agent_i):
+    free_x, free_y = np.where(obs == 0.3)
+    free_points = np.array(list(zip(free_x, free_y)))
+
+    # diff --> temporal differences
+    diff_x = [0,-1,-1,-1,0,1,1,1]
+    diff_y = [1,1,0,-1,-1,-1,0,1]
+    
+    frontiers = []
+
+    #for free_x, free_y in zip(free_x, free_y):
+
+    for dx, dy in zip(diff_x, diff_y):
+        test_x = env.agents[agent_i].pos[0] + dx
+        test_y = env.agents[agent_i].pos[1] + dy
+
+        if test_x>=0 and test_x<obs.shape[0] and test_y>=0 and test_y<obs.shape[1]:
+            if obs[test_x, test_y] == 0.0:
+                dist = distance.cdist(env.agents[agent_i].pos, (test_x, test_y))
+                
+
 
 
 def check_collision(distances, canditate_action, obs):
@@ -100,7 +125,7 @@ def evaluate(frontiers, obs, agent_i):
 def get_action(obs):
     actions = []
     for agent_i in range(env.n_agents):
-        frontiers = find_frontiers(env.get_full_obs()) # obs[agent_i])
+        frontiers = find_frontiers(env.get_full_obs(), agent_i) # obs[agent_i])
         evaluate_actions = evaluate(frontiers, env.get_full_obs(), agent_i)#)obs[agent_i], agent_i)
         actions.append(np.argmin(evaluate_actions))
     return actions

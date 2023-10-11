@@ -54,19 +54,18 @@ def printMap(matrix, n_agents):
         for j in range(0, matrix.shape[1]):
             data_3d[i][j] = color_map[matrix[i][j]]
 
-    #print numbers inside squares
-    for i in range(matrix.shape[1]): #collumns
-        for j in range(matrix.shape[0]): #rows
-            c = matrix[j,i]
-            ax.text(i, j, str("%.1f"%c), va='center', ha='center')
+    #uncomment if you want to print the values of each cell
+    # for i in range(matrix.shape[1]): #collumns
+    #     for j in range(matrix.shape[0]): #rows
+    #         c = matrix[j,i]
+    #         ax.text(i, j, str("%.1f"%c), va='center', ha='center')
 
-    ax.set_title("Updated map") #set title name
+    ax.set_title("Agent 0 map") #set title name
     values = np.unique(matrix.ravel())
     
     if 0.5 in matrix: #if an obstacle as been found the colormap should include the color blue and the colorbar should be accordingly
         pos=ax.imshow(data_3d,cmap=cmap4) #outra alternativa é o matshow, mas assim o titulo nao aparece
 
-        #patches = [mpatches.Patch(color=colors1[i], label=labels1[i] ) for i in range(len(values)) ]
         patches = [mpatches.Patch(color=colors1[x], label=labels1[x] ) for x in range(n_agents+3) ]
         
         # put those patched as legend-handles into the legend
@@ -169,10 +168,9 @@ def printAgentsMaps(agents, n_agents):
 
     grid_shape = agents[0].exploredMap.shape
 
-
-    for agent_i in range(n_agents):
-        ax[agent_i].set_title("Agent {} map".format(agent_i)) #set title name
-        matrix = agents[agent_i].exploredMap
+    if(n_agents==1):
+        ax.set_title("Agent 0 map") #set title name
+        matrix = agents[0].exploredMap
 
         values = np.unique(matrix.ravel())
         data_3d = np.ndarray(shape=(grid_shape[0], grid_shape[1], 3), dtype=int)
@@ -182,27 +180,62 @@ def printAgentsMaps(agents, n_agents):
                 data_3d[i][j] = color_map[matrix[i][j]]
 
         if 0.5 in matrix: #if an obstacle as been found the colormap should include the color blue and the colorbar should be accordingly
-            pos=ax[agent_i].imshow(data_3d,cmap=cmap4) #outra alternativa é o matshow, mas assim o titulo nao aparece
+            pos=ax.imshow(data_3d,cmap=cmap4) #outra alternativa é o matshow, mas assim o titulo nao aparece
 
         else:
-            pos=ax[agent_i].imshow(data_3d,cmap=cmap5) #outra alternativa é o matshow, mas assim o titulo nao aparece
+            pos=ax.imshow(data_3d,cmap=cmap5) #outra alternativa é o matshow, mas assim o titulo nao aparece
 
         #uncomment if you want to print the values of each cell
         # for i in range(matrix.shape[1]): #collumns
         #     for j in range(matrix.shape[0]): #rows
         #         c = matrix[j,i]
-        #         ax[agent_i].text(i, j, str("%.1f"%c), va='center', ha='center')
+        #         ax.text(i, j, str("%.1f"%c), va='center', ha='center')
 
         #adding grid lines
         # Set minor ticks/gridline cadence
-        ax[agent_i].yaxis.set_minor_locator(IndexLocator(base=1.0, offset=0.0))
-        ax[agent_i].xaxis.set_minor_locator(IndexLocator(base=1.0, offset=0.0))
-        ax[agent_i].grid(which = "minor", linewidth=1.4)
+        ax.yaxis.set_minor_locator(IndexLocator(base=1.0, offset=0.0))
+        ax.xaxis.set_minor_locator(IndexLocator(base=1.0, offset=0.0))
+        ax.grid(which = "minor", linewidth=1.4)
         #change tick color to white
-        ax[agent_i].tick_params(which = "minor" ,axis='both', colors='white')
+        ax.tick_params(which = "minor" ,axis='both', colors='white')
 
-        ax[agent_i].yaxis.set_major_locator(IndexLocator(base=1.0, offset=0.5))
-        ax[agent_i].xaxis.set_major_locator(IndexLocator(base=1.0, offset=0.5))
+        ax.yaxis.set_major_locator(IndexLocator(base=1.0, offset=0.5))
+        ax.xaxis.set_major_locator(IndexLocator(base=1.0, offset=0.5))
+
+    else:
+        for agent_i in range(n_agents):
+            ax[agent_i].set_title("Agent {} map".format(agent_i)) #set title name
+            matrix = agents[agent_i].exploredMap
+
+            values = np.unique(matrix.ravel())
+            data_3d = np.ndarray(shape=(grid_shape[0], grid_shape[1], 3), dtype=int)
+
+            for i in range(0, grid_shape[0]):
+                for j in range(0, grid_shape[1]):
+                    data_3d[i][j] = color_map[matrix[i][j]]
+
+            if 0.5 in matrix: #if an obstacle as been found the colormap should include the color blue and the colorbar should be accordingly
+                pos=ax[agent_i].imshow(data_3d,cmap=cmap4) #outra alternativa é o matshow, mas assim o titulo nao aparece
+
+            else:
+                pos=ax[agent_i].imshow(data_3d,cmap=cmap5) #outra alternativa é o matshow, mas assim o titulo nao aparece
+
+            #uncomment if you want to print the values of each cell
+            # for i in range(matrix.shape[1]): #collumns
+            #     for j in range(matrix.shape[0]): #rows
+            #         c = matrix[j,i]
+            #         ax[agent_i].text(i, j, str("%.1f"%c), va='center', ha='center')
+
+            #adding grid lines
+            # Set minor ticks/gridline cadence
+            ax[agent_i].yaxis.set_minor_locator(IndexLocator(base=1.0, offset=0.0))
+            ax[agent_i].xaxis.set_minor_locator(IndexLocator(base=1.0, offset=0.0))
+            ax[agent_i].grid(which = "minor", linewidth=1.4)
+            #change tick color to white
+            ax[agent_i].tick_params(which = "minor" ,axis='both', colors='white')
+
+            ax[agent_i].yaxis.set_major_locator(IndexLocator(base=1.0, offset=0.5))
+            ax[agent_i].xaxis.set_major_locator(IndexLocator(base=1.0, offset=0.5))
 
     patches = [mpatches.Patch(color=colors1[x], label=labels1[x] ) for x in range(n_agents+3) ]
     

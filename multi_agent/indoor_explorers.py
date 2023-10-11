@@ -285,10 +285,19 @@ class IndoorExplorers(gym.Env):
 
          #since they move one at a time there is no risk of collision
         if next_pos is not None and self._is_cell_vacant(next_pos):
-                self.agents[agent_i].pos = next_pos #agent_pos[agent_i] = next_pos
-                self._full_obs[curr_pos[0]][curr_pos[1]] = PRE_IDS['empty/explored']
-                self.__update_agents_view()
-        #if a random action is not valid -> does nothing
+            self.agents[agent_i].pos = next_pos #agent_pos[agent_i] = next_pos
+            self._full_obs[curr_pos[0]][curr_pos[1]] = PRE_IDS['empty/explored']
+            self.__update_agents_view()
+        # elif next_pos in self.obstacles_idx: # TODO collision with an obstacle (in progress: I am adding collisions so it does not get stuck against walls)
+        #     self.agents[agent_i].pos = None
+        #     self.agents[agent_i].collision = True
+        #     self._full_obs[curr_pos[0]][curr_pos[1]] = PRE_IDS['empty/explored'] #it disappears from the map
+        #     #self.__update_agents_view()
+        #     self.agents[agent_i].pastExploredMap = self.agents[agent_i].exploredMap.copy()
+        else: #if a random action is not valid -> does nothing (keeps the same pos)
+            self.agents[agent_i].pos = curr_pos
+            self.__update_agents_view() #maybe I only need to update the pastExploredMap?? TO CHECK!
+
 
 
     #check which would the the next_pos if hipotethicaly the specified "move" was applied
@@ -349,6 +358,7 @@ class IndoorExplorers(gym.Env):
 
         #update agents pos: -> needs to be done after so the lidar info does not override the pos of agents in _full_obs
         for agent_i in range(self.n_agents):
+            #if not self.agents[agent_i].done: #TODO if agent_i has not crashed or done
             self.agents[agent_i].exploredMap[self.agents[agent_i].pos[0],[self.agents[agent_i].pos[1]]] = (agent_i + 1) 
             self._full_obs[self.agents[agent_i].pos[0]][self.agents[agent_i].pos[1]] = (agent_i + 1) #note that here we sum 1
             #print(np.where(self._full_obs==(agent_i+1)))
@@ -366,7 +376,7 @@ class IndoorExplorers(gym.Env):
         self.lidarsIndexes = indexes
 
 
-    #CONFIRMAR!! esta vai ser a função de inicialização do mapa e das posições de cada agente
+    #initialization of the map and every agent's position
     def __init_full_obs(self):
         #creates new map
         self.groundTruthMap = self.__create_grid()
@@ -407,7 +417,7 @@ class IndoorExplorers(gym.Env):
         self.__draw_base_img()
 
 
-    #CONFIRM!!
+    #reset function
     def reset(self):
         self._total_episode_reward = [0 for _ in range(self.n_agents)]
         self.reset_agents() 
@@ -439,6 +449,7 @@ class IndoorExplorers(gym.Env):
         assert (self._step_count is not None), \
             "Call reset before using step method."
 
+        rewards = np.zeros(self.n_agents)
         self._step_count += 1
         if self.conf["viewer"]["print_prompts"]:
             print("Start of step {}".format(self._step_count))
@@ -467,22 +478,26 @@ class IndoorExplorers(gym.Env):
             self.merge_maps(group)
 
 
-        #compute rewards for each agent 
-        rewards = [self._computeReward(agent_i) for agent_i in range(self.n_agents)]
+        #old: compute rewards for each agent 
+        #rewards = [self._computeReward(agent_i) for agent_i in range(self.n_agents)]
 
 
-        #check if max steps as been reached or 90% of the map has been explored
-        if (self._step_count >= self._max_steps) or (np.count_nonzero(self._full_obs) > 0.90*(self._grid_shape[0]*self._grid_shape[1])):#(0.0 not in self._full_obs):  #old: or (True not in self._prey_alive):
-            for i in range(self.n_agents):
-                self.agents[i].done = True  #_agent_dones[i] = True
+        #old: check if max steps as been reached or 90% of the map has been explored
+        # if (self._step_count >= self._max_steps) or (np.count_nonzero(self._full_obs) > 0.90*(self._grid_shape[0]*self._grid_shape[1])):#(0.0 not in self._full_obs):  #old: or (True not in self._prey_alive):
+        #     for i in range(self.n_agents):
+        #         self.agents[i].done = True 
 
 
-        #TODO CHECK IF DONE:
-        #if _checkDone():
+        #check if agents are done and compute rewards
+        for agent_i in range(self.n_agents):
+            self._checkDone(agent_i)
+            rewards[agent_i] = self.agents[agent_i].reward
+            self._total_episode_reward[agent_i] += rewards[agent_i] #save cumulative reward of the episode for each agent
+        if np.count_nonzero(self._full_obs) > 0.90*(self._grid_shape[0]*self._grid_shape[1]): #if _full_obs is 90% explored
+            #then end episode, set all dones to true
+            for agent_i in range(self.n_agents):
+                self.agents[agent_i].done = True 
 
-
-        for i in range(self.n_agents):
-            self._total_episode_reward[i] += rewards[i]
 
         # Check for episode overflow
         if all(self.get_agents_dones()):
@@ -500,23 +515,29 @@ class IndoorExplorers(gym.Env):
                 self._steps_beyond_done += 1
 
 
-        return self.get_agents_obs(), rewards, self.get_agents_dones(), {'other info' : None}  #_agent_dones
+        return self.get_agents_obs(), rewards, self.get_agents_dones(), {'total_episode_reward' : self._total_episode_reward}  #_agent_dones
         #the info parameter was: {'prey_alive': self._prey_alive} in the original code, TODO see what extra indo would be useful for me
 
-    #TODO: this is from the other code, not from here, delete later
-    def _checkDone(self):
+    #check specific conditions for each agent
+    def _checkDone(self, agent_i):
+        #if max_steps has been reached end episode
+        if self._step_count >= self._max_steps:
+            self.agents[agent_i].done = True
 
-        if self.timeStep > self.maxSteps:
-            self.done = True
-        elif np.count_nonzero(self.exploredMap) > 0.99*(self.SIZE[0]*self.SIZE[1]):
-            self.done = True
-            self.reward = self.conf["bonus_reward"]
-        elif self.collision:
-            self.done = True
-            self.reward = self.conf["collision_reward"]
-        elif self.out_of_bounds:
-            self.done = True
-            self.reward = self.conf["out_of_bounds_reward"]
+        #check if any agent has explored 90% of the map, if so task is complete, give extra reward and end episode (this last part is done after)
+        if np.count_nonzero(self.agents[agent_i].exploredMap) > 0.90*(self._grid_shape[0]*self._grid_shape[1]):
+            self.agents[agent_i].done = True
+            self.agents[agent_i].reward = self.conf["bonus_reward"]
+        elif self.agents[agent_i].collision: #this never happens, but I will leave this here in case someone wants to have this option
+            self.agents[agent_i].done = True
+            self.agents[agent_i].reward = self.conf["collision_reward"]
+        elif self.agents[agent_i].out_of_bounds: #this never happens, but I will leave this here in case someone wants to have this option
+            self.agents[agent_i].done = True
+            self.agents[agent_i].reward = self.conf["out_of_bounds_reward"]
+        else:
+            pastExploredCells = np.count_nonzero(self.agents[agent_i].pastExploredMap)
+            currentExploredCells = np.count_nonzero(self.agents[agent_i].exploredMap)
+            self.agents[agent_i].reward = 10*(currentExploredCells - pastExploredCells) - self.movementCost#(self._step_count*self.movementCost)
 
     def render(self, mode='human'):
         assert (self._step_count is not None), \
@@ -591,6 +612,7 @@ class IndoorExplorers(gym.Env):
     def reset_agents(self):
         for agent_i in range(self.n_agents):
             self.agents[agent_i].done = False
+            self.agents[agent_i].reward = 0
             self.agents[agent_i].pos = None
             self.agents[agent_i].collision = False
             self.agents[agent_i].out_of_bounds = False 
@@ -642,8 +664,8 @@ class Agent(object):
         #each agent has its own explored map
         self.exploredMap = []
         self.pastExploredMap = []
-        # agents are movable by default
-        #self.movable = True
+        
+        self.reward = 0
         # cannot send communication signals
         self.silent = False
         
@@ -662,7 +684,7 @@ class Agent(object):
         # color
         self.color = None
         # state
-        self.state = None#AgentState() #simplificar? acho que pode ser útil para saber se está a comunicar ou non
+        self.state = None
         # action
         self.action = None #vou simplificar e vai ser um nº inteiro #Action()
         # script behavior to execute
