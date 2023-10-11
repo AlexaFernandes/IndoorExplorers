@@ -3,7 +3,7 @@ DEFAULT_CONFIG={
     #  approach (centralized or not centralized)
     "approach": False,
     #  number of agents
-    "n_agents": 1,
+    "n_agents": 4,
     #  general configuration for the topology of operational area
     "random_spawn": True, # if set to true, initial pos are ignored
     "initial": [ [0,0],

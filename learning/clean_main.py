@@ -19,7 +19,7 @@ if __name__ == '__main__':
     #install roms
     #install_roms_in_folder('roms/')
     data = []
-    game = 0
+    game = 2 #SELECT WHICH GAME HERE!!
 
     #create agent
     dddqn = DDDQNAgent(GAMES[game], MOVES, epsilon_decay=0.99999, batch_size=32) #'IndoorExplorers'
@@ -27,7 +27,7 @@ if __name__ == '__main__':
     dddqn.q_target.summary()
     
     #train agent
-    exploration_rate = dddqn.run(num_episodes=1000,  render=False, checkpoint=True, cp_interval=20, cp_render=True, n_intelligent_agents = 1)
+    exploration_rate = dddqn.run(num_episodes=100,  render=True, checkpoint=True, cp_interval=20, cp_render=True, n_intelligent_agents = 1)
     data.append(exploration_rate)
 
     p.dump( data, open("{}x{}_{}agents.p".format(GAMES[game][0][0], GAMES[game][0][1],GAMES[game][0][2] ),"wb"))

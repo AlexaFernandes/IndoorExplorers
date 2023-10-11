@@ -130,25 +130,28 @@ class IndoorExplorers(gym.Env):
         for col in range(0, self._grid_shape[1]):
             for row in range(0, self._grid_shape[0]):
                 for agent_i in agent_list:
-                    #save if it is a wall or explored cell
-                    if self.agents[agent_i].exploredMap[row][col] == 0.5 or self.agents[agent_i].exploredMap[row][col] == 0.3:
-                        new_merged_map[row][col]= self.agents[agent_i].exploredMap[row][col]
-                    #if it was an agent, check if it is still in range
-                    elif self.agents[agent_i].pastExploredMap[row][col] >= 1.0:
-                        #if it is not in range, mark the cell as explored/empty
-                        if (self.agents[agent_i].pastExploredMap[row][col]-1) not in agent_list:
-                            if self.conf["viewer"]["print_prompts"]:
-                                print("{} out of range of {}".format(self.agents[agent_i].pastExploredMap[row][col]-1, agent_i))
-                            new_merged_map[row][col] = 0.3
+                    if not self.agents[agent_i].done:
+                        #save if it is a wall or explored cell
+                        if self.agents[agent_i].exploredMap[row][col] == 0.5 or self.agents[agent_i].exploredMap[row][col] == 0.3:
+                            new_merged_map[row][col]= self.agents[agent_i].exploredMap[row][col]
+                        #if it was an agent, check if it is still in range
+                        elif self.agents[agent_i].pastExploredMap[row][col] >= 1.0:
+                            #if it is not in range, mark the cell as explored/empty
+                            if (self.agents[agent_i].pastExploredMap[row][col]-1) not in agent_list:
+                                if self.conf["viewer"]["print_prompts"]:
+                                    print("{} out of range of {}".format(self.agents[agent_i].pastExploredMap[row][col]-1, agent_i))
+                                new_merged_map[row][col] = 0.3
         
         #save the positions of all agents in range in the end, so their position isn't lost
         for agent_i in agent_list:
-            agent_pos = self.agents[agent_i].pos
-            new_merged_map[agent_pos[0]][agent_pos[1]] = agent_i + 1
+            if not self.agents[agent_i].done:
+                agent_pos = self.agents[agent_i].pos
+                new_merged_map[agent_pos[0]][agent_pos[1]] = agent_i + 1
 
         #save a copy of the new map (it needs to be a copy otherwise they will have all the same reference and will be changing the same object)
         for agent_i in agent_list:
-            self.agents[agent_i].exploredMap = new_merged_map.copy()
+            if not self.agents[agent_i].done:
+                self.agents[agent_i].exploredMap = new_merged_map.copy()
         # if (self.exploredMap==map).all():
         #     return
         # else:  
@@ -165,7 +168,7 @@ class IndoorExplorers(gym.Env):
         #print(combinations)
         #check if any 2 agents are in comms range and save in the comms matrix
         for pair in combinations:
-            if self.agents[pair[0]].in_range(self.agents[pair[1]]) == True:
+            if (not self.agents[pair[0]].done) and ((not self.agents[pair[1]].done)) and (self.agents[pair[0]].in_range(self.agents[pair[1]]) == True):
                 #print(pair)
                 #in_range.append(pair)
                 self.comm_range[pair[0]][pair[1]] = self.comm_range[pair[1]][pair[0]] = 1 
@@ -184,12 +187,13 @@ class IndoorExplorers(gym.Env):
         # Repeat for all vertices adjacent
         # to this vertex v
         for j in range(0, self.n_agents):
-            #go through the upper triangular matrix (since the matrix is simmetric, we olny need to go through one of the triangular matrices)
-            if (agent_i < j):
-                if self.comm_range[agent_i][j] == 1: #if they are connected
-                    if visited[j] == False:
-                        # Update the list
-                        temp = self.DFSUtil(temp, j, visited)
+            #go through the upper triangular matrix (since the matrix is simmetric, we only need to go through one of the triangular matrices)
+            if (agent_i < j): 
+                if (not self.agents[agent_i].done) and (not self.agents[j].done): #if both involved agents are not done yet
+                    if self.comm_range[agent_i][j] == 1: #if they are connected
+                        if visited[j] == False:
+                            # Update the list
+                            temp = self.DFSUtil(temp, j, visited)
                     
         return temp
 
@@ -197,9 +201,12 @@ class IndoorExplorers(gym.Env):
         visited = []
         cc = []
         for i in range(self.n_agents):
-            visited.append(False)
+            if self.agents[i].done:
+                visited.append(True)
+            else:
+                visited.append(False)
         for agent_i in range(self.n_agents):
-            if visited[agent_i] == False:
+            if (not self.agents[agent_i].done) and (visited[agent_i] == False):
                 temp = []
                 cc.append(self.DFSUtil(temp, agent_i, visited))
         return cc
@@ -283,20 +290,30 @@ class IndoorExplorers(gym.Env):
         else:
             raise Exception('Action Not found!')
 
-         #since they move one at a time there is no risk of collision
+         #since they move one at a time there is no risk of collision between agents
         if next_pos is not None and self._is_cell_vacant(next_pos):
             self.agents[agent_i].pos = next_pos #agent_pos[agent_i] = next_pos
             self._full_obs[curr_pos[0]][curr_pos[1]] = PRE_IDS['empty/explored']
             self.__update_agents_view()
-        # elif next_pos in self.obstacles_idx: # TODO collision with an obstacle (in progress: I am adding collisions so it does not get stuck against walls)
-        #     self.agents[agent_i].pos = None
-        #     self.agents[agent_i].collision = True
-        #     self._full_obs[curr_pos[0]][curr_pos[1]] = PRE_IDS['empty/explored'] #it disappears from the map
-        #     #self.__update_agents_view()
-        #     self.agents[agent_i].pastExploredMap = self.agents[agent_i].exploredMap.copy()
-        else: #if a random action is not valid -> does nothing (keeps the same pos)
+            if self.conf["viewer"]["print_prompts"]: print("agent {} - alright".format(agent_i))
+        elif next_pos in self.obstacles_idx: #collision with an obstacle (in progress: I am adding collisions so it does not get stuck against walls)
+            self.agents[agent_i].pos = None
+            self.agents[agent_i].done = True
+            self.agents[agent_i].collision = True
+            self._full_obs[curr_pos[0]][curr_pos[1]] = PRE_IDS['empty/explored'] #it disappears from the map
+            self.agents[agent_i].pastExploredMap = self.agents[agent_i].exploredMap.copy()
+            if self.conf["viewer"]["print_prompts"]: print("agent {} - obstacle".format(agent_i))
+        elif not self.is_valid(next_pos): # is outside of bounds
+            self.agents[agent_i].pos = None
+            self.agents[agent_i].done = True
+            self.agents[agent_i].out_of_bounds = True
+            self._full_obs[curr_pos[0]][curr_pos[1]] = PRE_IDS['empty/explored'] #it disappears from the map
+            self.agents[agent_i].pastExploredMap = self.agents[agent_i].exploredMap.copy()
+            if self.conf["viewer"]["print_prompts"]: print("agent {} - outside".format(agent_i))
+        else: #if a random action is no op or possible collision with other agent -> does nothing (keeps the same pos)
             self.agents[agent_i].pos = curr_pos
-            self.__update_agents_view() #maybe I only need to update the pastExploredMap?? TO CHECK!
+            self.__update_agents_view() #even if the agent doesn't move, it needs to update its pastExploredMap and comm_range
+            if self.conf["viewer"]["print_prompts"]: print("agent {} - no op or prevented agent collision".format(agent_i))
 
 
 
@@ -336,7 +353,7 @@ class IndoorExplorers(gym.Env):
                          _map=self.lidar_map)                   for _ in range(self.n_agents)]
         
         #create list of obstacle indexes
-        obstacles_idx = np.where(self.groundTruthMap == 1.0)
+        obstacles_idx = np.where(self.groundTruthMap == 0.5)
         obstacles_x = obstacles_idx[0]
         obstacles_y = obstacles_idx[1]
         self.obstacles_idx = np.stack((obstacles_x, obstacles_y), axis=1)
@@ -347,21 +364,22 @@ class IndoorExplorers(gym.Env):
         self.past_full_obs = self._full_obs.copy()
         #update maps with lidar info
         for agent_i in range(self.n_agents):
-            self.agents[agent_i].pastExploredMap = self.agents[agent_i].exploredMap.copy()
+            if not self.agents[agent_i].done: #if agent_i has not crashed and isn't done
+                self.agents[agent_i].pastExploredMap = self.agents[agent_i].exploredMap.copy()
 
-            lidarX = self.lidarsIndexes[agent_i][:,0]
-            lidarY = self.lidarsIndexes[agent_i][:,1]
+                lidarX = self.lidarsIndexes[agent_i][:,0]
+                lidarY = self.lidarsIndexes[agent_i][:,1]
 
-            #update what lidars has scanned
-            self.agents[agent_i].exploredMap[lidarX, lidarY] = self.groundTruthMap[lidarX, lidarY] 
-            self._full_obs[lidarX, lidarY] = self.groundTruthMap[lidarX, lidarY]
+                #update what lidars has scanned
+                self.agents[agent_i].exploredMap[lidarX, lidarY] = self.groundTruthMap[lidarX, lidarY] 
+                self._full_obs[lidarX, lidarY] = self.groundTruthMap[lidarX, lidarY]
 
         #update agents pos: -> needs to be done after so the lidar info does not override the pos of agents in _full_obs
         for agent_i in range(self.n_agents):
-            #if not self.agents[agent_i].done: #TODO if agent_i has not crashed or done
-            self.agents[agent_i].exploredMap[self.agents[agent_i].pos[0],[self.agents[agent_i].pos[1]]] = (agent_i + 1) 
-            self._full_obs[self.agents[agent_i].pos[0]][self.agents[agent_i].pos[1]] = (agent_i + 1) #note that here we sum 1
-            #print(np.where(self._full_obs==(agent_i+1)))
+            if not self.agents[agent_i].done: #if agent_i has not crashed and isn't done
+                self.agents[agent_i].exploredMap[self.agents[agent_i].pos[0],[self.agents[agent_i].pos[1]]] = (agent_i + 1) 
+                self._full_obs[self.agents[agent_i].pos[0]][self.agents[agent_i].pos[1]] = (agent_i + 1) #note that here we sum 1
+                #print(np.where(self._full_obs==(agent_i+1)))
 
     #activates the lidar of each agent
     def _activateLidars(self):
@@ -369,9 +387,10 @@ class IndoorExplorers(gym.Env):
         indexes = [None for _ in range(self.n_agents)]
 
         for agent_i in range(self.n_agents): 
-            self.ldr[agent_i].update(self.agents[agent_i].pos)
-            #thetas[agent_i], ranges[agent_i] = self.ldr[agent_i].thetas, self.ldr[agent_i].ranges
-            indexes[agent_i] = self.ldr[agent_i].idx
+            if not self.agents[agent_i].done: #if agent_i has not crashed and isn't done
+                self.ldr[agent_i].update(self.agents[agent_i].pos)
+                #thetas[agent_i], ranges[agent_i] = self.ldr[agent_i].thetas, self.ldr[agent_i].ranges
+                indexes[agent_i] = self.ldr[agent_i].idx
 
         self.lidarsIndexes = indexes
 
@@ -470,12 +489,13 @@ class IndoorExplorers(gym.Env):
 
         #communicate maps
         #check if they are in comm range and then change info
-        groups_in_range = []
-        groups_in_range = self.connectedComponents()
-        if self.conf["viewer"]["print_prompts"]:
-            print("after actions, groups in range: {}".format(groups_in_range))
-        for group in groups_in_range:
-            self.merge_maps(group)
+        if self.n_agents > 1:
+            groups_in_range = []
+            groups_in_range = self.connectedComponents()
+            if self.conf["viewer"]["print_prompts"]:
+                print("after actions, groups in range: {}".format(groups_in_range))
+            for group in groups_in_range:
+                self.merge_maps(group)
 
 
         #old: compute rewards for each agent 
@@ -557,21 +577,23 @@ class IndoorExplorers(gym.Env):
 
         #render agents
         for agent_i in range(self.n_agents):
-            #draw lidar fov
-            if self.conf["viewer"]["draw_lidar"] == True:
-                for neighbour in self.lidarsIndexes[agent_i]:
-                    if not self._full_obs[neighbour[0]][neighbour[1]] == PRE_IDS['wall']:
-                        fill_cell(img, neighbour, cell_size=CELL_SIZE, fill=AGENT_NEIGHBORHOOD_COLOR, margin=0.1)
-                fill_cell(img, self.agents[agent_i].pos, cell_size=CELL_SIZE, fill=AGENT_NEIGHBORHOOD_COLOR, margin=0.1)
-            else:
-                fill_cell(img, self.agents[agent_i].pos, cell_size=CELL_SIZE, fill='white')
-            draw_cell_outline(img, self.agents[agent_i].pos, cell_size=CELL_SIZE, fill='black',width=1)
+            if not self.agents[agent_i].done:
+                #draw lidar fov
+                if self.conf["viewer"]["draw_lidar"] == True:
+                    for neighbour in self.lidarsIndexes[agent_i]:
+                        if not self._full_obs[neighbour[0]][neighbour[1]] == PRE_IDS['wall']:
+                            fill_cell(img, neighbour, cell_size=CELL_SIZE, fill=AGENT_NEIGHBORHOOD_COLOR, margin=0.1)
+                    fill_cell(img, self.agents[agent_i].pos, cell_size=CELL_SIZE, fill=AGENT_NEIGHBORHOOD_COLOR, margin=0.1)
+                else:
+                    fill_cell(img, self.agents[agent_i].pos, cell_size=CELL_SIZE, fill='white')
+                draw_cell_outline(img, self.agents[agent_i].pos, cell_size=CELL_SIZE, fill='black',width=1)
             
         for agent_i in range(self.n_agents):
-            draw_circle(img, self.agents[agent_i].pos, cell_size=CELL_SIZE, fill=self.agents[agent_i].color)
-            write_cell_text(img, text=str(agent_i), pos=self.agents[agent_i].pos, cell_size=CELL_SIZE,
-                            fill='white', margin=0.4)  
-            draw_square_outline(img, self.agents[agent_i].pos, self.agents[agent_i].c_range, cell_size=CELL_SIZE, fill=self.agents[agent_i].color, width = 2)
+            if not self.agents[agent_i].done:
+                draw_circle(img, self.agents[agent_i].pos, cell_size=CELL_SIZE, fill=self.agents[agent_i].color)
+                write_cell_text(img, text=str(agent_i), pos=self.agents[agent_i].pos, cell_size=CELL_SIZE,
+                                fill='white', margin=0.4)  
+                draw_square_outline(img, self.agents[agent_i].pos, self.agents[agent_i].c_range, cell_size=CELL_SIZE, fill=self.agents[agent_i].color, width = 2)
             
         img = np.asarray(img)
         if mode == 'rgb_array':

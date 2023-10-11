@@ -10,6 +10,7 @@ from time import time #calculate runtime
 from collections import deque #needed for replay memory
 from random import sample #used to get random minibacth
 from colorama import Fore, Back, Style
+import pickle as p
 
 #TensorFlow 2.0
 import tensorflow as tf
@@ -241,7 +242,14 @@ class DDDQNAgent(object):
                     action_n[i] = np.random.randint(self.num_actions)
                 
                 if self.env.conf["viewer"]["print_prompts"]:
-                    print("\u001b[34m {}\u001b[34m,\033[91m {}\033[00m,\u001b[32m {}\u001b[32m,\u001b[33m {}\u001b[33m" .format(ACTION_MEANING[action_n[0]], ACTION_MEANING[action_n[1]],ACTION_MEANING[action_n[2]],ACTION_MEANING[action_n[3]]))
+                    if self.env.n_agents == 1:
+                        print("\u001b[34m {}\u001b[34m" .format(ACTION_MEANING[action_n[0]]))
+                    elif self.env.n_agents == 2:
+                        print("\u001b[34m {}\u001b[34m,\033[91m {}\033[00m" .format(ACTION_MEANING[action_n[0]], ACTION_MEANING[action_n[1]]))
+                    elif self.env.n_agents == 3:
+                        print("\u001b[34m {}\u001b[34m,\033[91m {}\033[00m,\u001b[32m {}\u001b[32m" .format(ACTION_MEANING[action_n[0]], ACTION_MEANING[action_n[1]],ACTION_MEANING[action_n[2]]))
+                    elif self.env.n_agents == 4:
+                        print("\u001b[34m {}\u001b[34m,\033[91m {}\033[00m,\u001b[32m {}\u001b[32m,\u001b[33m {}\u001b[33m" .format(ACTION_MEANING[action_n[0]], ACTION_MEANING[action_n[1]],ACTION_MEANING[action_n[2]],ACTION_MEANING[action_n[3]]))
                     print(Style.RESET_ALL)
 
                 obs_n, reward_n, done_n, info = self.step(action_n) #perform action
