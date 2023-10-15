@@ -3,7 +3,7 @@ DEFAULT_CONFIG={
     #  approach (centralized or not centralized)
     "approach": False,
     #  number of agents
-    "n_agents": 4,
+    "n_agents": 1,
     #  general configuration for the topology of operational area
     "random_spawn": True, # if set to true, initial pos are ignored
     "initial": [ [0,0],
@@ -18,12 +18,13 @@ DEFAULT_CONFIG={
     #             },
     "size":[16,16],
     #  configuration regarding the movements of uav
-    "movementCost":1, #this is discounted for every time step/every movement made
+    "movementCost":10, #this is discounted for every time step/every movement made
+    "percentage_explored": 0.9, #goal percentage of the map to be explored
 
     # ======== ENVIROMENT =======
     # configuration regarding the random map generation
     # absolute number of obstacles, randomly placed in env
-    "obstacles":5,
+    "obstacles":0,
     # if rows/colums activated the obstacles will be placed in a semi random
     # spacing
     "number_rows":None,
@@ -35,11 +36,20 @@ DEFAULT_CONFIG={
     "margins":[1, 1],
     # obstacle size expressed in cell if rows/columns not activated
     "obstacle_size":[3,3],
-    # mas number of steps for the environment
+
+    # flag to activate the verification check of an agent being stuck
+    "check_stuck": False,
+    #"steps_to_be_stuck": 2*sqrt,
+
+    # max number of steps for the environment
     "max_steps":400,
+
+    # ======== REWARDS ===========
     "bonus_reward":1000,
+    "stuck_reward": -1000,
     "collision_reward":-1000,
     "out_of_bounds_reward":-1000,
+    
 
     # ======== SENSORS | LIDAR =======
     "lidar_range":3,

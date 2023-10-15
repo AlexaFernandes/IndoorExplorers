@@ -51,7 +51,7 @@ class DDDQNAgent(object):
         self.gamma = gamma #discount factor
         self.epsilon = epsilon #exploration factor
         self.epsilon_min = epsilon_min #minimum exploration probability
-        self.epsilon_decay = epsilon_decay #exponential decay rate of epsilon
+        self.epsilon_decay = epsilon_decay #exponential decay rate of epsilonf
         #memory
         self.memory_size = memory_size #replay memory size
         self.memory = deque(maxlen=memory_size) #replay memory
@@ -81,7 +81,7 @@ class DDDQNAgent(object):
     def build_network(self):
     #Build the Dueling DQN Network
         X_input = Input(self.state_shape, name='input')
-        X = Conv2D(32, 8, 1, activation='relu')(X_input)
+        X = Conv2D(filters=32, kernel_size=8, strides=1, activation='relu')(X_input)
         X = Conv2D(64, 4, 2, activation='relu')(X)
         X = Conv2D(64, 3, 4, activation='relu')(X)
         X = Flatten()(X)
@@ -114,6 +114,10 @@ class DDDQNAgent(object):
             print("Não era suposto!")
             self.memory.append([self.state, action, next_state, reward, done])
         #self.state = next_state
+    
+    def normalize(self):
+        sum_all = np.sum(self.q_eval.predict(self.state[agent_i])[0])
+        return
 
     def choose_action(self, training, agent_i):
     #Predict next action based on current state and decay epsilon.
@@ -122,6 +126,7 @@ class DDDQNAgent(object):
                 action = np.random.randint(self.num_actions)
                 #print("random action {}".format(action))
             else: #predict best actions
+                print(self.q_eval.predict(self.state[agent_i])[0])
                 action = np.argmax(self.q_eval.predict(self.state[agent_i])[0])
             #decay epsilon, if epsilon falls below min then set to min
             if self.epsilon > self.epsilon_min:
@@ -130,6 +135,7 @@ class DDDQNAgent(object):
                 self.epsilon = self.epsilon_min
                 print('Epsilon mininum of {} reached'.format(self.epsilon_min))
         else: #if not training then always get best action
+            print(self.q_eval.predict(self.state[agent_i])[0])
             action = np.argmax(self.q_eval.predict(self.state[agent_i])[0])
             print("argmax {}".format(action))
         return action
@@ -139,12 +145,6 @@ class DDDQNAgent(object):
         if len(self.memory) < self.batch_size or self.steps % self.learn_every != 0: return
         #sample memory for a minibatch
         mini_batch = sample(self.memory, self.batch_size)
-        # for el in mini_batch:
-        #     print(el[0].shape)
-        #     print(el[1])
-        #     print(el[2].shape)
-        #     print(el[3])
-        #     print(el[4])
         #separate minibatch into elements
         state, action, next_state, reward, done = [np.squeeze(i) for i in zip(*mini_batch)]
         state = np.expand_dims(state, axis=3)
@@ -232,6 +232,7 @@ class DDDQNAgent(object):
             score = 0
             done_n = [False for _ in range(self.env.n_agents)]
             ep_reward = 0
+            exploration_rate_epi=[]
             LIVES = None #will store starting lives
 
             while True:
@@ -256,21 +257,22 @@ class DDDQNAgent(object):
                 #print(reward_n)
                 #TODO should the score be the cumulative score of all agents or just agent 0(the intelligent one)?
                 score += reward_n[0] #cumulative score for episode
+                #print(score)
                 #TODO is this necessary? reward = np.clip(reward_n[0], -1.0, 1.0).item() #clip reward to range [-1.0, 1.0]
-                #if LIVES is None: LIVES = info['lives'] #get starting lives
-                #if info['lives'] < LIVES: done = True #flag for reset when dead
+                
                 self.remember(action_n[0], obs_n[0], reward_n[0], done_n[0]) #store results
                 self.state = obs_n #update state 
                 self.steps += 1 #increment steps
                 self.update_target() #update target network (update_every)
                 self.learn() #fit q model (learn_every)
 
-                exploration_rate.append(np.count_nonzero(self.env._full_obs)/(self.env._grid_shape[0]*self.env._grid_shape[1]))
+                exploration_rate_epi.append(np.count_nonzero(self.env._full_obs)/(self.env._grid_shape[0]*self.env._grid_shape[1]))
                 if render: self.env.render()
                 if all(done_n):
                     scores.append(score) #store scores for all epsisodes
                     self.reset()
                     self.state = self.state#[0] #since we only want to train agent 0, we only need agent's 0 observations
+                    exploration_rate.append(exploration_rate_epi)
                     break
             elapsed_time = round((time() - start_time)/60, 2)        
             print(printSTR.format(e, num_episodes, round(score, 4), np.average(scores[-50:]), elapsed_time))
@@ -278,10 +280,7 @@ class DDDQNAgent(object):
                 eval_score, frames = self.evaluate(render=cp_render)
                 print('EVALUATION: {}'.format(round(eval_score, 4)))
                 self.log.append([e, score, np.average(scores[-50:]), elapsed_time, eval_score])
-                fileName = 'DDDQN_{}_{}_{}'.format(e, self.game, Now(separate=False))
-                # print(Fore.RED)
-                # print("in save")
-                # print(Style.RESET_ALL)
+                fileName = 'DDDQN_{}_{}_movCost{}_{}'.format(e, self.game, self.env.conf["movementCost"], Now(separate=False))
                 self.save('learning/models', fileName)
                 self.save_log('learning/logs', fileName)
                 convert_frames(frames, 'learning/renders', fileName, otype=otype)
@@ -326,7 +325,6 @@ class DDDQNAgent(object):
         while True:
             for i in range(self.env.n_agents):
                 action_n[i] = self.choose_action(training=False, agent_i=i) #get best action
-            print(action_n)
             observation_n, reward_n, done_n, info = self.step(action_n) #perform actions
             self.state = observation_n #update current state
             score += np.sum(reward_n) #cumulative score for episode
@@ -337,8 +335,8 @@ class DDDQNAgent(object):
                 self.reset()
                 break
         if render_and_save:
-            fileName = 'DDDQN_PLAY_{}_{}'.format(self.game, Now(separate=False))
-            convert_frames(frames, 'renders', fileName, otype=otype)
+            fileName = 'DDDQN_PLAY_{}_movCost{}__{}'.format(self.game,self.env.conf["movementCost"], Now(separate=False))  
+            convert_frames(frames, 'learning/renders', fileName, otype=otype)
 
 
 ACTION_MEANING = {

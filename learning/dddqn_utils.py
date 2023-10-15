@@ -41,9 +41,9 @@ def convert_frames(frame_array, directory, fileName, fps=60, otype='AVI'):
 def Now(separate=True):
     now = datetime.now() #- timedelta(hours=6) #timedelata needed for Colab
     if separate:
-        return now.strftime('%m_%d_%Y_%H%M%S')
+        return now.strftime('%d_%m_%Y_%H%M%S')
     else:
-        return now.strftime('%m%d%Y%H%M%S')
+        return now.strftime('%d%m%Y%H%M%S')
     
 # return the most recent file in directory, allows pattern matching
 def get_latest_file(directory_matching):

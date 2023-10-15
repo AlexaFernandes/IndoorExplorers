@@ -302,20 +302,64 @@ if __name__ == "__main__":
 
 
 #-----------------------------------------------------------------------
-    
+    #SHUFFLE order for action taking
 
-    action_n=[4,5,6,7]
-    idxs = np.arange(0,len(action_n))
-    action_dict = dict(enumerate(action_n))
-    print(action_dict)
+    # action_n=[4,5,6,7]
+    # idxs = np.arange(0,len(action_n))
+    # action_dict = dict(enumerate(action_n))
+    # print(action_dict)
 
-    random.shuffle(idxs)
-    print(idxs)
+    # random.shuffle(idxs)
+    # print(idxs)
 
-    for i in range(len(action_n)):
-        print(action_dict[idxs[i]])
+    # for i in range(len(action_n)):
+    #     print(action_dict[idxs[i]])
 
 
+#-----------------------------------------------------------------
+import operator as op
+import pandas as pd
+from collections import Counter
+ 
+# declaring the list
+l = [[1,1], [1,1],[1,1], [1,1],[1,1], [1,1],[1,1], [1,1],[1,1], [1,1],[1,1], [1,1],[1,1], [1,1],[1,1], [1,1],[1,1], [1,1],[1,1], [1,1],[1,1], [1,1],[1,1], [1,1],[1,1], [1,1],[1,1], [1,1],[1,1], [1,1],[1,1], [1,1],[1,1], [1,1],[1,1], [1,1],[1,1], [1,1],[1,1], [1,1],[1,1], [1,1],[1,1], [1,1],[1,1], [1,1],[1,1], [1,1],[1,1], [1,1],[1,1], [1,1], [1,2], [2,0], [2,2], [3,0]]
+l2= [(4,1),(5,1),(1,1),(1,1),(1,1),(1,1),(1,1),(1,1),(1,2),(1,2),(1,2),(1,1),(1,1),(1,1),(1,1),(1,1),(1,1),(1,2)]
+x=[1,1]
+#--------------------------------------
+#to count specific
+#print(f"{x} has occurred {op.countOf(l, x)} times")
+#-------------------------------------------
+#cool but overkill do a dataframe, not easy to ad of remove elements
+df= pd.DataFrame(l1)
+count2= df.value_counts().index.tolist()
+most_freq_elem=count2[0]
+
+# print(most_freq_elem)
+# print(df.value_counts()[most_freq_elem] )
+#---------------------------
+#cool but overkill do a series, not easy to ad of remove elements
+# ser=pd.Series(l)
+# count = ser.value_counts().index.tolist()
+
+# most_freq_elem=count[0]
+#print(most_freq_elem)
+#print(ser.value_counts()[most_freq_elem] )
+#-------------------------------
+#THIS METHOD IS THE ONE THAT WORKS BETTER FOR WHAT I WANT
+import statistics
+from statistics import mode
+print(l2)
+print(mode(l2))
+print(op.countOf(l2, mode(l2)))
+pos=[3,0]
+l2.pop(0)
+l2.append(tuple([6,0]))
+l2.pop(0)
+l2.append(tuple(pos))
+l2.pop(0)
+print(l2)
+print(mode(l2))
+print(op.countOf(l2, mode(l2)))
 
 
 

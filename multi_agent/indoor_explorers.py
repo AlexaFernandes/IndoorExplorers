@@ -3,6 +3,7 @@ import logging
 
 import gym
 import numpy as np
+import math
 from PIL import ImageColor
 from colorama import Fore, Back, Style
 from gym import spaces
@@ -292,27 +293,35 @@ class IndoorExplorers(gym.Env):
 
          #since they move one at a time there is no risk of collision between agents
         if next_pos is not None and self._is_cell_vacant(next_pos):
-            self.agents[agent_i].pos = next_pos #agent_pos[agent_i] = next_pos
+            self.agents[agent_i].pos = next_pos
             self._full_obs[curr_pos[0]][curr_pos[1]] = PRE_IDS['empty/explored']
             self.__update_agents_view()
+
             if self.conf["viewer"]["print_prompts"]: print("agent {} - alright".format(agent_i))
         elif next_pos in self.obstacles_idx: #collision with an obstacle (in progress: I am adding collisions so it does not get stuck against walls)
-            self.agents[agent_i].pos = None
             self.agents[agent_i].done = True
             self.agents[agent_i].collision = True
+
+            fill_cell(self._base_img, self.agents[agent_i].pos, cell_size=CELL_SIZE, fill='white') #before changing agent's pos to None, change base image for correct render
+            self.agents[agent_i].pos = None
             self._full_obs[curr_pos[0]][curr_pos[1]] = PRE_IDS['empty/explored'] #it disappears from the map
             self.agents[agent_i].pastExploredMap = self.agents[agent_i].exploredMap.copy()
+
             if self.conf["viewer"]["print_prompts"]: print("agent {} - obstacle".format(agent_i))
         elif not self.is_valid(next_pos): # is outside of bounds
-            self.agents[agent_i].pos = None
             self.agents[agent_i].done = True
             self.agents[agent_i].out_of_bounds = True
+
+            fill_cell(self._base_img, self.agents[agent_i].pos, cell_size=CELL_SIZE, fill='white') #before changing agent's pos to None, change base image for correct render
+            self.agents[agent_i].pos = None
             self._full_obs[curr_pos[0]][curr_pos[1]] = PRE_IDS['empty/explored'] #it disappears from the map
             self.agents[agent_i].pastExploredMap = self.agents[agent_i].exploredMap.copy()
+
             if self.conf["viewer"]["print_prompts"]: print("agent {} - outside".format(agent_i))
         else: #if a random action is no op or possible collision with other agent -> does nothing (keeps the same pos)
             self.agents[agent_i].pos = curr_pos
             self.__update_agents_view() #even if the agent doesn't move, it needs to update its pastExploredMap and comm_range
+
             if self.conf["viewer"]["print_prompts"]: print("agent {} - no op or prevented agent collision".format(agent_i))
 
 
@@ -513,7 +522,7 @@ class IndoorExplorers(gym.Env):
             self._checkDone(agent_i)
             rewards[agent_i] = self.agents[agent_i].reward
             self._total_episode_reward[agent_i] += rewards[agent_i] #save cumulative reward of the episode for each agent
-        if np.count_nonzero(self._full_obs) > 0.90*(self._grid_shape[0]*self._grid_shape[1]): #if _full_obs is 90% explored
+        if np.count_nonzero(self._full_obs) > self.conf["percentage_explored"]*(self._grid_shape[0]*self._grid_shape[1]): #if _full_obs is the defined % explored
             #then end episode, set all dones to true
             for agent_i in range(self.n_agents):
                 self.agents[agent_i].done = True 
@@ -541,11 +550,13 @@ class IndoorExplorers(gym.Env):
     #check specific conditions for each agent
     def _checkDone(self, agent_i):
         #if max_steps has been reached end episode
-        if self._step_count >= self._max_steps:
+        if (self._step_count >= self._max_steps) and (not self.agents[agent_i].done):
             self.agents[agent_i].done = True
+            fill_cell(self._base_img, self.agents[agent_i].pos, cell_size=CELL_SIZE, fill='white')
 
-        #check if any agent has explored 90% of the map, if so task is complete, give extra reward and end episode (this last part is done after)
-        if np.count_nonzero(self.agents[agent_i].exploredMap) > 0.90*(self._grid_shape[0]*self._grid_shape[1]):
+        #check if any agent has explored the defined % of the map, if so task is complete, give extra reward and end episode (this last part is done after)
+        if np.count_nonzero(self.agents[agent_i].exploredMap) > self.conf["percentage_explored"]*(self._grid_shape[0]*self._grid_shape[1]):
+            if not self.agents[agent_i].done: fill_cell(self._base_img, self.agents[agent_i].pos, cell_size=CELL_SIZE, fill='white')
             self.agents[agent_i].done = True
             self.agents[agent_i].reward = self.conf["bonus_reward"]
         elif self.agents[agent_i].collision: #this never happens, but I will leave this here in case someone wants to have this option
@@ -554,9 +565,19 @@ class IndoorExplorers(gym.Env):
         elif self.agents[agent_i].out_of_bounds: #this never happens, but I will leave this here in case someone wants to have this option
             self.agents[agent_i].done = True
             self.agents[agent_i].reward = self.conf["out_of_bounds_reward"]
+        elif self.agents[agent_i].stuck >= math.ceil(2*math.sqrt(self._grid_shape[0]**2 + self._grid_shape[1]**2)):#self.conf["steps_to_be_stuck"]:
+            self.agents[agent_i].done = True
+            print("GOT STUCK")
+            self.agents[agent_i].reward = self.conf["stuck_reward"]
         else:
             pastExploredCells = np.count_nonzero(self.agents[agent_i].pastExploredMap)
             currentExploredCells = np.count_nonzero(self.agents[agent_i].exploredMap)
+            if self.conf["check_stuck"] and ((currentExploredCells - pastExploredCells)==0): #if it does not learn something new
+                self.agents[agent_i].stuck += 1 #increment flag to know if it is stuck
+                print(self.agents[agent_i].stuck)
+            else: #if it discovers at least 1 new cell, then reset the flag
+                self.agents[agent_i].stuck = 0
+            #print("new cells explored: {}".format((currentExploredCells-pastExploredCells)))
             self.agents[agent_i].reward = 10*(currentExploredCells - pastExploredCells) - self.movementCost#(self._step_count*self.movementCost)
 
     def render(self, mode='human'):
@@ -607,7 +628,8 @@ class IndoorExplorers(gym.Env):
             #mas simplesmente não foi renderizado depois de ter os dados atualizados
             if self.conf["viewer"]["print_map"] == True:
                 #printMap(self._full_obs, self.n_agents)
-                printAgentsMaps(self.agents, self.n_agents)
+                print2Map(self.agents[0].exploredMap, 1, self.agents[0].pastExploredMap)
+                #printAgentsMaps(self.agents, self.n_agents)
             return self.viewer.isopen
 
     def seed(self, n=None):
@@ -636,6 +658,7 @@ class IndoorExplorers(gym.Env):
             self.agents[agent_i].done = False
             self.agents[agent_i].reward = 0
             self.agents[agent_i].pos = None
+            self.agents[agent_i].stuck = 0
             self.agents[agent_i].collision = False
             self.agents[agent_i].out_of_bounds = False 
             self.agents[agent_i].c_range = self.conf["comm_range"]
@@ -656,6 +679,7 @@ class IndoorExplorers(gym.Env):
     def get_agents_dones(self):
         return [self.agents[agent_i].done for agent_i in range(self.n_agents)]
 
+    #TODO SAFE DELETE -  not necessary anymore
     def _computeReward(self, agent_i):
         if self.conf["approach"] == True: #if it is a centralized approach thenonly look at _full_obs?? TODO
             pastExploredCells = np.count_nonzero(self.past_full_obs)
@@ -690,7 +714,7 @@ class Agent(object):
         self.reward = 0
         # cannot send communication signals
         self.silent = False
-        
+        self.stuck = 0
         self.collision = False
         self.out_of_bounds = False
         # cannot observe the world

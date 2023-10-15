@@ -86,16 +86,16 @@ def print2Map(matrix, n_agents, groundTruthMap):
     cmap4= ListedColormap(colors1)
     cmap5= ListedColormap(colors2)
 
-    fig, ax = plt.subplots(1,2, sharex=True, sharey=True)#,figsize=(12,2))
+    fig, ax = plt.subplots(1,2, figsize=(10 * n_agents, 4.5), sharex=True, sharey=True)#,figsize=(12,2))
     fig.set_tight_layout(True)
 
     ax[0].set_title("Updated map") #set title name
     values = np.unique(matrix.ravel())
 
-    data_3d = np.ndarray(shape=(matrix.shape[0], matrix.shape[1], 3), dtype=int)
-    for i in range(0, matrix.shape[0]):
-        for j in range(0, matrix.shape[1]):
-            data_3d[i][j] = color_map[matrix[i][j]]
+    data_3d = get_3d_array(matrix, _dtype=int) #np.ndarray(shape=(matrix.shape[0], matrix.shape[1], 3), dtype=int)
+    # for i in range(0, matrix.shape[0]):
+    #     for j in range(0, matrix.shape[1]):
+    #         data_3d[i][j] = color_map[matrix[i][j]]
 
     if 0.5 in matrix: #if an obstacle as been found the colormap should include the color blue and the colorbar should be accordingly
 
@@ -136,13 +136,13 @@ def print2Map(matrix, n_agents, groundTruthMap):
         ax[i].yaxis.set_major_locator(IndexLocator(base=1.0, offset=0.5))
         ax[i].xaxis.set_major_locator(IndexLocator(base=1.0, offset=0.5))
 
-    ax[1].set_title("Ground Truth Map") #set title name
+    ax[1].set_title("Past") #set title name
     #values = np.unique(groundTruthMap.ravel())
 
-    data_3d = np.ndarray(shape=(groundTruthMap.shape[0], groundTruthMap.shape[1], 3), dtype=int)
-    for i in range(0, groundTruthMap.shape[0]):
-        for j in range(0, groundTruthMap.shape[1]):
-            data_3d[i][j] = color_map[groundTruthMap[i][j]]
+    data_3d =  data_3d = get_3d_array(groundTruthMap, _dtype=int)#np.ndarray(shape=(groundTruthMap.shape[0], groundTruthMap.shape[1], 3), dtype=int)
+    # for i in range(0, groundTruthMap.shape[0]):
+    #     for j in range(0, groundTruthMap.shape[1]):
+    #         data_3d[i][j] = color_map[groundTruthMap[i][j]]
 
     pos=ax[1].imshow(data_3d,cmap=cmap5) #outra alternativa é o matshow, mas assim o titulo nao aparece
 

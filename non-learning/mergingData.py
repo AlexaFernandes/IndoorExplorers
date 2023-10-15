@@ -16,8 +16,8 @@ CASES = [#["utility_42x42.p", "Area 42x42", "Utility [8]"],
          #["ppo_42x42.p", "Area 42x42", "PPO [22]"],
          #["utility_84x84.p", "Area 84x84", "Utility [8]"],
          #["cost_84x84.p", "Area 84x84", "Cost [8]"]],
-         #["ppo_84x84.p", "Area 84x84", "PPO [22]"]
-         ["16x16_1agents.p", "Area 16x16", "DDDQN"]
+         ["10000epi_IndoorExplorers16x16_1agents_movCost10_14102023204132.p","Area 16x16", "costMov 10"],
+         ["IndoorExplorers16x16_1agents (copy).p", "Area 16x16", "costMov 5"]
          ]
 
 
@@ -25,7 +25,7 @@ if __name__ == "__main__":
 
     dict = {}
     dict["Terrain"] = []
-    dict["Distance Covered [m]"] = []
+    dict["Steps"] = []
     dict["Explored Area [%]"] = []
     dict["Exploration Policy"] = []
 
@@ -33,15 +33,15 @@ if __name__ == "__main__":
 
         data = p.load(open(file,"rb"))
 
-        for game in data:
+        for game in data[0]:
             for distance,explored in enumerate(game):
                 dict["Terrain"].append(area)
-                dict["Distance Covered [m]"].append(distance)
+                dict["Steps"].append(distance)
                 dict["Explored Area [%]"].append(explored)
                 dict["Exploration Policy"].append(exploration_type)
 
     df = pd.DataFrame(dict)
 
-    sns.lineplot(data=df, x="Distance Covered [m]", y="Explored Area [%]",
+    sns.lineplot(data=df, x="Steps", y="Explored Area [%]",
                  hue="Exploration Policy", style="Terrain")
     plt.show()
