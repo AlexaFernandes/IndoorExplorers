@@ -126,7 +126,7 @@ class DDDQNAgent(object):
                 action = np.random.randint(self.num_actions)
                 #print("random action {}".format(action))
             else: #predict best actions
-                print(self.q_eval.predict(self.state[agent_i])[0])
+                #print(self.q_eval.predict(self.state[agent_i])[0])
                 action = np.argmax(self.q_eval.predict(self.state[agent_i])[0])
             #decay epsilon, if epsilon falls below min then set to min
             if self.epsilon > self.epsilon_min:
@@ -135,7 +135,7 @@ class DDDQNAgent(object):
                 self.epsilon = self.epsilon_min
                 print('Epsilon mininum of {} reached'.format(self.epsilon_min))
         else: #if not training then always get best action
-            print(self.q_eval.predict(self.state[agent_i])[0])
+            #print(self.q_eval.predict(self.state[agent_i])[0])
             action = np.argmax(self.q_eval.predict(self.state[agent_i])[0])
             print("argmax {}".format(action))
         return action
@@ -254,7 +254,7 @@ class DDDQNAgent(object):
                     print(Style.RESET_ALL)
 
                 obs_n, reward_n, done_n, info = self.step(action_n) #perform action
-                #print(reward_n)
+                print(reward_n)
                 #TODO should the score be the cumulative score of all agents or just agent 0(the intelligent one)?
                 score += reward_n[0] #cumulative score for episode
                 #print(score)
@@ -280,7 +280,10 @@ class DDDQNAgent(object):
                 eval_score, frames = self.evaluate(render=cp_render)
                 print('EVALUATION: {}'.format(round(eval_score, 4)))
                 self.log.append([e, score, np.average(scores[-50:]), elapsed_time, eval_score])
-                fileName = 'DDDQN_{}_{}_movCost{}_{}'.format(e, self.game, self.env.conf["movementCost"], Now(separate=False))
+                if self.env.conf["check_stuck"]:
+                    fileName = 'DDDQN_{}_{}_movCost{}_stuck{}_{}'.format(e, self.game,self.env.conf["movementCost"], self.env.conf["stuck_method"],Now(separate=False))
+                else:
+                    fileName = 'DDDQN_{}_{}_movCost{}_noStuck_{}'.format(e, self.game, self.env.conf["movementCost"], Now(separate=False))
                 self.save('learning/models', fileName)
                 self.save_log('learning/logs', fileName)
                 convert_frames(frames, 'learning/renders', fileName, otype=otype)
@@ -290,7 +293,6 @@ class DDDQNAgent(object):
         print('Finished training {} episodes in {} minutes.'.format(num_episodes, (time() - start_time)/60))
         return exploration_rate
     
-    #TODO
     #in the evaluation, each agent will use what the agent 0 learnt in training
     def evaluate(self, render=False):
     #Run an episode and return the score and frames.
@@ -335,7 +337,10 @@ class DDDQNAgent(object):
                 self.reset()
                 break
         if render_and_save:
-            fileName = 'DDDQN_PLAY_{}_movCost{}__{}'.format(self.game,self.env.conf["movementCost"], Now(separate=False))  
+            if self.env.conf["check_stuck"]:
+                fileName = 'DDDQN_PLAY_{}_movCost{}_stuck{}_{}'.format(self.game, self.env.conf["movementCost"], self.env.conf["stuck_method"], Now(separate=False))
+            else:
+                fileName = 'DDDQN_PLAY_{}_movCost{}_noStuck_{}'.format(self.game,self.env.conf["movementCost"], Now(separate=False))  
             convert_frames(frames, 'learning/renders', fileName, otype=otype)
 
 

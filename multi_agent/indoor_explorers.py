@@ -4,11 +4,14 @@ import logging
 import gym
 import numpy as np
 import math
+import operator as op
 from PIL import ImageColor
 from colorama import Fore, Back, Style
 from gym import spaces
 from gym.utils import seeding
 import itertools
+import statistics
+from statistics import mode
 
 import multi_agent.core
 from multi_agent.utils.multi_printMaps import *
@@ -44,6 +47,8 @@ class IndoorExplorers(gym.Env):
         self._steps_beyond_done = None
         self.movementCost = self.conf["movementCost"]
         self.viewer = None
+        if self.conf["check_stuck"] and (self.conf["stuck_method"] == 2) :
+            self.positions = [ [] for _ in range(self.n_agents)]
 
         
         #definition of all the necessary matrices(maps):
@@ -131,7 +136,7 @@ class IndoorExplorers(gym.Env):
         for col in range(0, self._grid_shape[1]):
             for row in range(0, self._grid_shape[0]):
                 for agent_i in agent_list:
-                    if not self.agents[agent_i].done:
+                    if (self.agents[agent_i].is_alive()) and (not self.agents[agent_i].done):
                         #save if it is a wall or explored cell
                         if self.agents[agent_i].exploredMap[row][col] == 0.5 or self.agents[agent_i].exploredMap[row][col] == 0.3:
                             new_merged_map[row][col]= self.agents[agent_i].exploredMap[row][col]
@@ -145,13 +150,14 @@ class IndoorExplorers(gym.Env):
         
         #save the positions of all agents in range in the end, so their position isn't lost
         for agent_i in agent_list:
-            if not self.agents[agent_i].done:
+            if (self.agents[agent_i].is_alive()) and (not self.agents[agent_i].done):
                 agent_pos = self.agents[agent_i].pos
+                #print("MERGE_MAP: is alive:{} , agent {}, with pos{}".format(self.agents[agent_i].is_alive(),agent_i, agent_pos))
                 new_merged_map[agent_pos[0]][agent_pos[1]] = agent_i + 1
 
         #save a copy of the new map (it needs to be a copy otherwise they will have all the same reference and will be changing the same object)
         for agent_i in agent_list:
-            if not self.agents[agent_i].done:
+            if (self.agents[agent_i].is_alive()) and (not self.agents[agent_i].done):
                 self.agents[agent_i].exploredMap = new_merged_map.copy()
         # if (self.exploredMap==map).all():
         #     return
@@ -169,7 +175,7 @@ class IndoorExplorers(gym.Env):
         #print(combinations)
         #check if any 2 agents are in comms range and save in the comms matrix
         for pair in combinations:
-            if (not self.agents[pair[0]].done) and ((not self.agents[pair[1]].done)) and (self.agents[pair[0]].in_range(self.agents[pair[1]]) == True):
+            if (self.agents[pair[0]].is_alive() and (not self.agents[pair[0]].done) ) and ((not self.agents[pair[1]].done) and (self.agents[pair[1]].is_alive())) and (self.agents[pair[0]].in_range(self.agents[pair[1]]) == True):
                 #print(pair)
                 #in_range.append(pair)
                 self.comm_range[pair[0]][pair[1]] = self.comm_range[pair[1]][pair[0]] = 1 
@@ -190,7 +196,7 @@ class IndoorExplorers(gym.Env):
         for j in range(0, self.n_agents):
             #go through the upper triangular matrix (since the matrix is simmetric, we only need to go through one of the triangular matrices)
             if (agent_i < j): 
-                if (not self.agents[agent_i].done) and (not self.agents[j].done): #if both involved agents are not done yet
+                if (self.agents[agent_i].is_alive() and not self.agents[agent_i].done) and (self.agents[j].is_alive() and not self.agents[j].done): #if both involved agents are alive and not done yet
                     if self.comm_range[agent_i][j] == 1: #if they are connected
                         if visited[j] == False:
                             # Update the list
@@ -202,12 +208,12 @@ class IndoorExplorers(gym.Env):
         visited = []
         cc = []
         for i in range(self.n_agents):
-            if self.agents[i].done:
+            if (not self.agents[i].is_alive()) or self.agents[i].done: #if the agent is not alive or it is done
                 visited.append(True)
             else:
                 visited.append(False)
         for agent_i in range(self.n_agents):
-            if (not self.agents[agent_i].done) and (visited[agent_i] == False):
+            if (self.agents[agent_i].is_alive() and not self.agents[agent_i].done) and (visited[agent_i] == False): #maybe it is not necessary to do that double check, bc it is already marked as bisited above
                 temp = []
                 cc.append(self.DFSUtil(temp, agent_i, visited))
         return cc
@@ -291,6 +297,9 @@ class IndoorExplorers(gym.Env):
         else:
             raise Exception('Action Not found!')
 
+        if curr_pos == None or next_pos == None:
+            Exception("whaaat?")
+
          #since they move one at a time there is no risk of collision between agents
         if next_pos is not None and self._is_cell_vacant(next_pos):
             self.agents[agent_i].pos = next_pos
@@ -298,8 +307,8 @@ class IndoorExplorers(gym.Env):
             self.__update_agents_view()
 
             if self.conf["viewer"]["print_prompts"]: print("agent {} - alright".format(agent_i))
-        elif next_pos in self.obstacles_idx: #collision with an obstacle (in progress: I am adding collisions so it does not get stuck against walls)
-            self.agents[agent_i].done = True
+        elif next_pos in self.obstacles_idx: #collision with an obstacle ( I am adding collisions so it does not get stuck against walls)
+            #self.agents[agent_i].done = True
             self.agents[agent_i].collision = True
 
             fill_cell(self._base_img, self.agents[agent_i].pos, cell_size=CELL_SIZE, fill='white') #before changing agent's pos to None, change base image for correct render
@@ -309,7 +318,7 @@ class IndoorExplorers(gym.Env):
 
             if self.conf["viewer"]["print_prompts"]: print("agent {} - obstacle".format(agent_i))
         elif not self.is_valid(next_pos): # is outside of bounds
-            self.agents[agent_i].done = True
+            #self.agents[agent_i].done = True
             self.agents[agent_i].out_of_bounds = True
 
             fill_cell(self._base_img, self.agents[agent_i].pos, cell_size=CELL_SIZE, fill='white') #before changing agent's pos to None, change base image for correct render
@@ -373,7 +382,7 @@ class IndoorExplorers(gym.Env):
         self.past_full_obs = self._full_obs.copy()
         #update maps with lidar info
         for agent_i in range(self.n_agents):
-            if not self.agents[agent_i].done: #if agent_i has not crashed and isn't done
+            if self.agents[agent_i].is_alive() and (not self.agents[agent_i].done): #if agent_i is alive and isn't done
                 self.agents[agent_i].pastExploredMap = self.agents[agent_i].exploredMap.copy()
 
                 lidarX = self.lidarsIndexes[agent_i][:,0]
@@ -385,7 +394,7 @@ class IndoorExplorers(gym.Env):
 
         #update agents pos: -> needs to be done after so the lidar info does not override the pos of agents in _full_obs
         for agent_i in range(self.n_agents):
-            if not self.agents[agent_i].done: #if agent_i has not crashed and isn't done
+            if self.agents[agent_i].is_alive() and (not self.agents[agent_i].done): #if agent_i is alive and isn't done
                 self.agents[agent_i].exploredMap[self.agents[agent_i].pos[0],[self.agents[agent_i].pos[1]]] = (agent_i + 1) 
                 self._full_obs[self.agents[agent_i].pos[0]][self.agents[agent_i].pos[1]] = (agent_i + 1) #note that here we sum 1
                 #print(np.where(self._full_obs==(agent_i+1)))
@@ -396,7 +405,8 @@ class IndoorExplorers(gym.Env):
         indexes = [None for _ in range(self.n_agents)]
 
         for agent_i in range(self.n_agents): 
-            if not self.agents[agent_i].done: #if agent_i has not crashed and isn't done
+            if self.agents[agent_i].is_alive() and (not self.agents[agent_i].done): #if agent_i is alive and isn't done
+                #print("LIDAR: is alive:{} ,agent {}, with pos{}".format(self.agents[agent_i].is_alive(), agent_i, self.agents[agent_i].pos))
                 self.ldr[agent_i].update(self.agents[agent_i].pos)
                 #thetas[agent_i], ranges[agent_i] = self.ldr[agent_i].thetas, self.ldr[agent_i].ranges
                 indexes[agent_i] = self.ldr[agent_i].idx
@@ -449,6 +459,8 @@ class IndoorExplorers(gym.Env):
     def reset(self):
         self._total_episode_reward = [0 for _ in range(self.n_agents)]
         self.reset_agents() 
+        if self.conf["check_stuck"] and (self.conf["stuck_method"] == 2) :
+            self.positions = [ [] for _ in range(self.n_agents)]
         self.comm_range = np.full((self.n_agents,self.n_agents), 0)
 
         #criar novo mapa e dá spawn de novo dos agents
@@ -456,11 +468,12 @@ class IndoorExplorers(gym.Env):
         #activa os lidars e dá update dos explored maps de cada um 
         #com base no que cada um consegue ver e na matrix de comms
         self.__init_full_obs()
-        groups_in_range = []
-        groups_in_range = self.connectedComponents()
-        
-        for group in groups_in_range:
-            self.merge_maps(group)
+        if self.n_agents > 1:
+            groups_in_range = []
+            groups_in_range = self.connectedComponents()
+            
+            for group in groups_in_range:
+                self.merge_maps(group)
 
         #reset other vars
         self._step_count = 0
@@ -483,6 +496,7 @@ class IndoorExplorers(gym.Env):
             print("Start of step {}".format(self._step_count))
 
         #randomize the order of action taking, so there is no hierarchy between agents
+        #it randomizes the order of the agents' indeces
         idxs = np.arange(0,len(agents_action))
         action_dict = dict(enumerate(agents_action)) #save in a dict to preserve original pairs fo key-value (agent_id - corresponding action)
         np.random.shuffle(idxs) #shufle the indeces
@@ -490,12 +504,19 @@ class IndoorExplorers(gym.Env):
         #apply chosen action
         for i in range(len(agents_action)):
             if not (self.agents[idxs[i]].done): 
+                if self.conf["check_stuck"] and (self.conf["stuck_method"]==2):
+                    #save the history of 50 positions for later check
+                    if len(self.positions[idxs[i]]) < 50 :
+                        self.positions[idxs[i]].append(tuple(self.agents[idxs[i]].pos)) #pos needs to be converted to a tuple, so the list is hashable
+                    else: #once it gets to 50 pop the 1st/oldest elem and append the most recent one at the end
+                        self.positions[idxs[i]].pop(0)
+                        self.positions[idxs[i]].append(tuple(self.agents[idxs[i]].pos))
                 self.__update_agent_pos(idxs[i], action_dict[idxs[i]])
+                
                 #print("{}{} {}-{}{}".format(TEXT_AGENT_COLORS[idxs[i]], idxs[i], action_dict[idxs[i]],ACTION_MEANING[action_dict[idxs[i]]], TEXT_AGENT_COLORS[idxs[i]] ))
                 #print("{} {} {}".format(TEXT_AGENT_COLORS[idxs[i]],self.agents[idxs[i]].pos,TEXT_AGENT_COLORS[idxs[i]]))
                 #print(Style.RESET_ALL)
     
-
         #communicate maps
         #check if they are in comm range and then change info
         if self.n_agents > 1:
@@ -506,22 +527,13 @@ class IndoorExplorers(gym.Env):
             for group in groups_in_range:
                 self.merge_maps(group)
 
-
-        #old: compute rewards for each agent 
-        #rewards = [self._computeReward(agent_i) for agent_i in range(self.n_agents)]
-
-
-        #old: check if max steps as been reached or 90% of the map has been explored
-        # if (self._step_count >= self._max_steps) or (np.count_nonzero(self._full_obs) > 0.90*(self._grid_shape[0]*self._grid_shape[1])):#(0.0 not in self._full_obs):  #old: or (True not in self._prey_alive):
-        #     for i in range(self.n_agents):
-        #         self.agents[i].done = True 
-
-
+        #TODO HAMBURGUER CHECK ORDER OF THESE CHECKS -> se colidir quando deve passar a done sem dar problemas para outros agents??????
         #check if agents are done and compute rewards
         for agent_i in range(self.n_agents):
             self._checkDone(agent_i)
             rewards[agent_i] = self.agents[agent_i].reward
             self._total_episode_reward[agent_i] += rewards[agent_i] #save cumulative reward of the episode for each agent
+
         if np.count_nonzero(self._full_obs) > self.conf["percentage_explored"]*(self._grid_shape[0]*self._grid_shape[1]): #if _full_obs is the defined % explored
             #then end episode, set all dones to true
             for agent_i in range(self.n_agents):
@@ -549,36 +561,76 @@ class IndoorExplorers(gym.Env):
 
     #check specific conditions for each agent
     def _checkDone(self, agent_i):
+        #if the agent is already done, set reward to 0
+        if self.agents[agent_i].done : 
+            self.agents[agent_i].reward = 0
+            return
+            
         #if max_steps has been reached end episode
-        if (self._step_count >= self._max_steps) and (not self.agents[agent_i].done):
+        if (self._step_count >= self._max_steps): #and (not self.agents[agent_i].done):
             self.agents[agent_i].done = True
-            fill_cell(self._base_img, self.agents[agent_i].pos, cell_size=CELL_SIZE, fill='white')
+            if self.agents[agent_i].is_alive():
+                print(self.agents[agent_i].pos)
+                fill_cell(self._base_img, self.agents[agent_i].pos, cell_size=CELL_SIZE, fill='white')
 
         #check if any agent has explored the defined % of the map, if so task is complete, give extra reward and end episode (this last part is done after)
         if np.count_nonzero(self.agents[agent_i].exploredMap) > self.conf["percentage_explored"]*(self._grid_shape[0]*self._grid_shape[1]):
-            if not self.agents[agent_i].done: fill_cell(self._base_img, self.agents[agent_i].pos, cell_size=CELL_SIZE, fill='white')
+            if self.agents[agent_i].is_alive(): fill_cell(self._base_img, self.agents[agent_i].pos, cell_size=CELL_SIZE, fill='white')
             self.agents[agent_i].done = True
             self.agents[agent_i].reward = self.conf["bonus_reward"]
-        elif self.agents[agent_i].collision: #this never happens, but I will leave this here in case someone wants to have this option
+        elif self.agents[agent_i].collision: #if it crashes against a wall
             self.agents[agent_i].done = True
             self.agents[agent_i].reward = self.conf["collision_reward"]
-        elif self.agents[agent_i].out_of_bounds: #this never happens, but I will leave this here in case someone wants to have this option
+        elif self.agents[agent_i].out_of_bounds: #if it goes out of the bounds
             self.agents[agent_i].done = True
-            self.agents[agent_i].reward = self.conf["out_of_bounds_reward"]
-        elif self.agents[agent_i].stuck >= math.ceil(2*math.sqrt(self._grid_shape[0]**2 + self._grid_shape[1]**2)):#self.conf["steps_to_be_stuck"]:
-            self.agents[agent_i].done = True
-            print("GOT STUCK")
-            self.agents[agent_i].reward = self.conf["stuck_reward"]
+            self.agents[agent_i].reward = self.conf["out_of_bounds_reward"]        
         else:
             pastExploredCells = np.count_nonzero(self.agents[agent_i].pastExploredMap)
             currentExploredCells = np.count_nonzero(self.agents[agent_i].exploredMap)
-            if self.conf["check_stuck"] and ((currentExploredCells - pastExploredCells)==0): #if it does not learn something new
-                self.agents[agent_i].stuck += 1 #increment flag to know if it is stuck
-                print(self.agents[agent_i].stuck)
-            else: #if it discovers at least 1 new cell, then reset the flag
-                self.agents[agent_i].stuck = 0
+
+            if self.conf["check_stuck"]:
+                #for stuck method 1:
+                if self.conf["stuck_method"] == 1:
+                    #update flag
+                    if(currentExploredCells - pastExploredCells)==0: #if it does not learn something new
+                        self.agents[agent_i].stuck += 1 #increment flag to know if it is stuck
+                        #print(self.agents[agent_i].stuck)
+
+                        #check if stuck condition has been met
+                        if self.agents[agent_i].stuck >= math.ceil(self._grid_shape[0]*self._grid_shape[1]):#(2*math.sqrt(self._grid_shape[0]**2 + self._grid_shape[1]**2)):
+                            self.agents[agent_i].done = True
+                            print("GOT STUCK!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+                            self.agents[agent_i].reward = self.conf["stuck_reward"]
+                            return
+                    else: #if it discovers at least 1 new cell, then reset the flag
+                        self.agents[agent_i].stuck = 0
+
+                #for stuck method 2:
+                elif self.conf["stuck_method"] == 2:
+                    #update flag
+                    lst = self.positions[agent_i]
+                    #the mode of self.positions[agent_i] corresponds to the most frequent element(pos) of the list 
+                    #getting the countOf, gives the number of times it appears on the list
+                    if op.countOf(lst, mode(lst)) >= 20 : #so it the most frequent pos appears more than 10 times in 50 movements
+                        self.agents[agent_i].stuck = 1 #aka True
+                    else:
+                        self.agents[agent_i].stuck = 0
+
+                    #check if stuck condition has been met
+                    if self.agents[agent_i].stuck == 1:
+                        self.agents[agent_i].done = True
+                        print("GOT STUCK!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!222222222222222222222222")
+                        self.agents[agent_i].reward = self.conf["stuck_reward"]
+                        return
+                else:
+                    logger.warn(
+                        "You must define a stuck_method check, either 1 or 2"
+                    )
+           
+            
             #print("new cells explored: {}".format((currentExploredCells-pastExploredCells)))
-            self.agents[agent_i].reward = 10*(currentExploredCells - pastExploredCells) - self.movementCost#(self._step_count*self.movementCost)
+            self.agents[agent_i].reward = 10*(currentExploredCells - pastExploredCells) - self.movementCost
+            #print("agent reward:{}".format(self.agents[agent_i].reward))
 
     def render(self, mode='human'):
         assert (self._step_count is not None), \
@@ -743,6 +795,9 @@ class Agent(object):
             return False
         else:
             return True
+
+    def is_alive(self):
+        return (not self.collision) and (not self.out_of_bounds) 
 
 
 AGENT_COLORS = [(30, 150, 245),(220, 10, 10),(0, 204, 0),(255, 215, 0)]

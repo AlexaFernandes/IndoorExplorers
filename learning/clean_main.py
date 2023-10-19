@@ -26,12 +26,12 @@ if __name__ == '__main__':
     num_epi = 10000
 
     #create agent
-    dddqn = DDDQNAgent(GAMES[game], MOVES, epsilon_decay=0.99999,update_every=1000, batch_size=32) #'IndoorExplorers'
+    dddqn = DDDQNAgent(GAMES[game], MOVES, epsilon_decay=0.99999, batch_size=32) #'IndoorExplorers'
     dddqn.q_eval.summary()
     dddqn.q_target.summary()
     
     #train agent
-    exploration_rate = dddqn.run(num_episodes=num_epi,render=False, checkpoint=True, cp_interval=200, cp_render=True,  n_intelligent_agents = 1)
+    exploration_rate = dddqn.run(num_episodes=num_epi, render=False, checkpoint=True, cp_interval=200, cp_render=True,  n_intelligent_agents = 1)
     data.append(exploration_rate)
 
     p.dump(data, open("{}epi_{}agents_movCost{}_{}.p".format(num_epi, GAMES[game], dddqn.env.conf["movementCost"], Now(separate=False)),"wb")) #GAMES[game][0][0], GAMES[game][0][1],GAMES[game][1]

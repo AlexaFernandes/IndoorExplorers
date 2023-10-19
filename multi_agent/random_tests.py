@@ -29,6 +29,8 @@ class Agent(object):
         self.pastExploredMap = []
         self.done = False
         self.pos = [0,0]
+        self.collision = False
+        self.out_of_bounds = False
         self.c_range = 1.0
         # color
         self.color = None
@@ -37,6 +39,9 @@ class Agent(object):
         self.action = None #vou simplificar e vai ser um nº inteiro #Action()
         # script behavior to execute
         self.action_callback = None #-> TODO pôr a policy/model aqui??? 
+
+    def is_alive(self):
+        return (not self.collision) and (not self.out_of_bounds) 
 
     def does_wall_exists( self,pos):
         row, col = pos
@@ -68,6 +73,9 @@ def is_valid(mat, pos):
 
 def _is_cell_vacant(mat , pos):
         return (is_valid(mat,pos) and (mat[pos[0]][pos[1]] == PRE_IDS['empty/explored']))
+
+def is_alive(agents, agent_i):
+        return (not agents[agent_i].collision) and (not agents[agent_i].out_of_bounds)
 
 def merge_maps(maps, agent_list):
         new_merged_map = np.full(maps[0].shape, 0.0)
@@ -330,7 +338,7 @@ x=[1,1]
 #print(f"{x} has occurred {op.countOf(l, x)} times")
 #-------------------------------------------
 #cool but overkill do a dataframe, not easy to ad of remove elements
-df= pd.DataFrame(l1)
+df= pd.DataFrame(l)
 count2= df.value_counts().index.tolist()
 most_freq_elem=count2[0]
 
@@ -346,21 +354,28 @@ most_freq_elem=count2[0]
 #print(ser.value_counts()[most_freq_elem] )
 #-------------------------------
 #THIS METHOD IS THE ONE THAT WORKS BETTER FOR WHAT I WANT
-import statistics
-from statistics import mode
-print(l2)
-print(mode(l2))
-print(op.countOf(l2, mode(l2)))
-pos=[3,0]
-l2.pop(0)
-l2.append(tuple([6,0]))
-l2.pop(0)
-l2.append(tuple(pos))
-l2.pop(0)
-print(l2)
-print(mode(l2))
-print(op.countOf(l2, mode(l2)))
+# import statistics
+# from statistics import mode
+# print(l2)
+# print(mode(l2))
+# print(op.countOf(l2, mode(l2)))
+# pos=[3,0]
+# l2.pop(0)
+# l2.append(tuple([6,0]))
+# l2.pop(0)
+# l2.append(tuple(pos))
+# l2.pop(0)
+# print(l2)
+# print(mode(l2))
+# print(op.countOf(l2, mode(l2)))
 
+
+#--------------------------------------------------------------------------
+
+agents[0].collision=False
+agents[0].out_of_bounds=True
+
+print(agents[0].is_alive())
 
 
 

@@ -18,7 +18,7 @@ DEFAULT_CONFIG={
     #             },
     "size":[16,16],
     #  configuration regarding the movements of uav
-    "movementCost":10, #this is discounted for every time step/every movement made
+    "movementCost": 10, #this is discounted for every time step/every movement made
     "percentage_explored": 0.9, #goal percentage of the map to be explored
 
     # ======== ENVIROMENT =======
@@ -38,8 +38,11 @@ DEFAULT_CONFIG={
     "obstacle_size":[3,3],
 
     # flag to activate the verification check of an agent being stuck
-    "check_stuck": False,
-    #"steps_to_be_stuck": 2*sqrt,
+    "check_stuck": True,
+    # method to check if it is stuck
+        #1: count the number of steps where the agent does not discover any new cell, if it reaches height*width => agent is stuck
+        #2: registers the last 50 positions, and if the most common one is repeated 10 times, then it is stuck
+    "stuck_method": 1,
 
     # max number of steps for the environment
     "max_steps":400,
