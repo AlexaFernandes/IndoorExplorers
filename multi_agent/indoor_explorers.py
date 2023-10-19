@@ -629,7 +629,7 @@ class IndoorExplorers(gym.Env):
            
             
             #print("new cells explored: {}".format((currentExploredCells-pastExploredCells)))
-            self.agents[agent_i].reward = 10*(currentExploredCells - pastExploredCells) - self.movementCost
+            self.agents[agent_i].reward = self.conf["new_cell_disc_reward"]*(currentExploredCells - pastExploredCells) - self.movementCost
             #print("agent reward:{}".format(self.agents[agent_i].reward))
 
     def render(self, mode='human'):

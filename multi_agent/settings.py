@@ -18,7 +18,6 @@ DEFAULT_CONFIG={
     #             },
     "size":[16,16],
     #  configuration regarding the movements of uav
-    "movementCost": 10, #this is discounted for every time step/every movement made
     "percentage_explored": 0.9, #goal percentage of the map to be explored
 
     # ======== ENVIROMENT =======
@@ -38,20 +37,22 @@ DEFAULT_CONFIG={
     "obstacle_size":[3,3],
 
     # flag to activate the verification check of an agent being stuck
-    "check_stuck": True,
+    "check_stuck": False,
     # method to check if it is stuck
         #1: count the number of steps where the agent does not discover any new cell, if it reaches height*width => agent is stuck
         #2: registers the last 50 positions, and if the most common one is repeated 10 times, then it is stuck
-    "stuck_method": 1,
+    "stuck_method": 2,
 
     # max number of steps for the environment
     "max_steps":400,
 
     # ======== REWARDS ===========
-    "bonus_reward":1000,
-    "stuck_reward": -1000,
-    "collision_reward":-1000,
-    "out_of_bounds_reward":-1000,
+    "movementCost": 0.5, #this is discounted for every time step/every movement made
+    "new_cell_disc_reward": 1, #reward value for each new cell discovered
+    "bonus_reward": 400, #reward for exploring "percentage_explored"% of the map
+    "stuck_reward": -400, #penalty for getting stuck between positions
+    "collision_reward":-400,
+    "out_of_bounds_reward":-400,
     
 
     # ======== SENSORS | LIDAR =======
