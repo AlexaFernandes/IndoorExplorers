@@ -1,0 +1,17 @@
+colorama==0.4.4
+gym==0.20.0
+gym_retro==0.8.0
+imageio==2.31.1
+ma_gym.egg==info
+matplotlib==3.3.2
+numpy==1.24.3
+opencv_python==4.4.0.46
+opencv_python_headless==4.3.0.36
+pandas==1.1.4
+Pillow==10.0.0
+Pillow==10.1.0
+pygame==2.0.0
+scipy==1.5.4
+seaborn==0.13.0
+setuptools==68.2.0
+tensorflow==2.13.0

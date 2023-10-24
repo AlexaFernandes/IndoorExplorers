@@ -2,7 +2,6 @@ import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3' #supress tensorflow messages
 
 import gym #OpenAI Gym
-#import retro #Gym Retro
 import argparse
 import math
 import numpy as np #NumPy
@@ -32,8 +31,8 @@ from multi_agent.utils.multi_printMaps import *
 class DDDQNAgent(object):
     def __init__(self, game, combos, time_limit=None, batch_size=32, learn_every=10, update_every=10000,
                  alpha=1e-4, gamma=0.99, epsilon=1.0, epsilon_min=0.01, epsilon_decay=0.9999, memory_size=100000):
-        #retro environment
-        self.game = game #game rom name
+        #environment info
+        self.game = game #game name
         self.combos = combos #valid discrete button combinations
         self.env = self.build_env(time_limit=time_limit) #retro environment
         self.num_actions = len(combos) #number of possible actions for env
@@ -220,6 +219,8 @@ class DDDQNAgent(object):
     #model is updated every update_every number of steps. If render is true then render each episode to monitor.
     #If checkpoint is true then save model weights and log and evaluate the model and convert and save the frames
     #every cp_interval number of of episodes. The evaluation is rendered if cp_render is true.
+
+        self.load('learning/models',"DDDQN_50000_IndoorExplorers16x16_1_movCost10_stuck2_20102023133637_QEval.h5","DDDQN_50000_IndoorExplorers16x16_1_movCost10_stuck2_20102023133637_QTarget.h5") #use the latest
         printSTR = 'Episode: {}/{} | Score: {:.4f} | AVG 50: {:.4f} | Elapsed Time: {} mins'
         start_time = time()
         scores = []
@@ -254,7 +255,7 @@ class DDDQNAgent(object):
                     print(Style.RESET_ALL)
 
                 obs_n, reward_n, done_n, info = self.step(action_n) #perform action
-                print(reward_n)
+                #print(reward_n)
                 #TODO should the score be the cumulative score of all agents or just agent 0(the intelligent one)?
                 score += reward_n[0] #cumulative score for episode
                 #print(score)
