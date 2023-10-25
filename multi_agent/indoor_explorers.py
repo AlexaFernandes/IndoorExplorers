@@ -527,7 +527,6 @@ class IndoorExplorers(gym.Env):
             for group in groups_in_range:
                 self.merge_maps(group)
 
-        #TODO HAMBURGUER CHECK ORDER OF THESE CHECKS -> se colidir quando deve passar a done sem dar problemas para outros agents??????
         #check if agents are done and compute rewards
         for agent_i in range(self.n_agents):
             self._checkDone(agent_i)
@@ -570,7 +569,7 @@ class IndoorExplorers(gym.Env):
         if (self._step_count >= self._max_steps): #and (not self.agents[agent_i].done):
             self.agents[agent_i].done = True
             if self.agents[agent_i].is_alive():
-                print(self.agents[agent_i].pos)
+                #print(self.agents[agent_i].pos)
                 fill_cell(self._base_img, self.agents[agent_i].pos, cell_size=CELL_SIZE, fill='white')
 
         #check if any agent has explored the defined % of the map, if so task is complete, give extra reward and end episode (this last part is done after)
@@ -680,8 +679,8 @@ class IndoorExplorers(gym.Env):
             #mas simplesmente não foi renderizado depois de ter os dados atualizados
             if self.conf["viewer"]["print_map"] == True:
                 #printMap(self._full_obs, self.n_agents)
-                print2Map(self.agents[0].exploredMap, 1, self.agents[0].pastExploredMap)
-                #printAgentsMaps(self.agents, self.n_agents)
+                #print2Map(self.agents[0].exploredMap, 1, self.agents[0].pastExploredMap)
+                printAgentsMaps(self.agents, self.n_agents)
             return self.viewer.isopen
 
     def seed(self, n=None):
