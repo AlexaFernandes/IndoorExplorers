@@ -697,9 +697,6 @@ class IndoorExplorers(gym.Env):
         for i, agent in enumerate(agents):
             agent.name = 'agent %d' % i
             agent.id = i
-            # agent.collide = True
-            # agent.silent = True
-            #initialize other properties
             agent.color = AGENT_COLORS[i]
             
         return agents
@@ -730,62 +727,35 @@ class IndoorExplorers(gym.Env):
     def get_agents_dones(self):
         return [self.agents[agent_i].done for agent_i in range(self.n_agents)]
 
-    #TODO SAFE DELETE -  not necessary anymore
-    def _computeReward(self, agent_i):
-        if self.conf["approach"] == True: #if it is a centralized approach thenonly look at _full_obs?? TODO
-            pastExploredCells = np.count_nonzero(self.past_full_obs)
-            currentExploredCells = np.count_nonzero(self._full_obs)
-        else:
-            pastExploredCells = np.count_nonzero(self.agents[agent_i].pastExploredMap)
-            currentExploredCells = np.count_nonzero(self.agents[agent_i].exploredMap)
-        reward = 0
-
-        #does this ever happen? since we check is the action is valid before it is taken? 
-        if self.agents[agent_i].collision: 
-            reward = self.conf["collision_reward"]
-        if self.agents[agent_i].out_of_bounds: 
-            reward = self.conf["out_of_bounds_reward"]
-
-        #CONFIRM!!
-        return reward + 10*(currentExploredCells - pastExploredCells) - self.movementCost
 
 
 class Agent(object):
     def __init__(self):
         super(Agent, self).__init__()
-        # name 
         self.name = ''
         self.id = None
-        self.pos = None
+        self.pos = None #position
+        self.reward = 0 
         self.done = False
         #each agent has its own explored map
         self.exploredMap = []
         self.pastExploredMap = []
-        
-        self.reward = 0
-        # cannot send communication signals
-        self.silent = False
+        #flag to signal stuck status
         self.stuck = 0
+        #flag for collisions
         self.collision = False
+        #flag for out of bounds status
         self.out_of_bounds = False
-        # cannot observe the world
-        #self.blind = False
-        # physical motor noise amount
-        #self.u_noise = None
         #communication range
         self.c_range = 3.0
         # communication noise amount
-        self.c_noise = None
-        # control range
-        self.u_range = 1.0
+        self.c_noise = None #not implemented
         # color
         self.color = None
         # state
         self.state = None
         # action
-        self.action = None #vou simplificar e vai ser um nº inteiro #Action()
-        # script behavior to execute
-        self.action_callback = None #-> TODO pôr a policy/model aqui??? 
+        self.action = None
 
     #it's considered in range, inside a square with distance of c_range squares around the agent
     def in_range(self, agent2):
@@ -795,6 +765,7 @@ class Agent(object):
         else:
             return True
 
+    #checks if the agent has not collided or out of bounds
     def is_alive(self):
         return (not self.collision) and (not self.out_of_bounds) 
 

@@ -6,24 +6,21 @@ DEFAULT_CONFIG={
     "n_agents": 4,
     #  general configuration for the topology of operational area
     "random_spawn": True, # if set to true, initial pos are ignored
+    # if random_spawn is set to False, then this list of pos is used to spawn each agent correspondently:
     "initial": [ [0,0],
                  [0,2],
                  [3,0],
                  [3,1]
                 ],
-    # "initial": {0: [0,0],
-    #             1: [0,20],
-    #             2 :[20,0],
-    #             3: [20,20]
-    #             },
     "size":[16,16],
     #  configuration regarding the movements of uav
     "percentage_explored": 0.9, #goal percentage of the map to be explored
 
     # ======== ENVIROMENT =======
     # configuration regarding the random map generation
-    # absolute number of obstacles, randomly placed in env
-    "obstacles":5,
+    # absolute num
+    # ber of obstacles, randomly placed in env
+    "obstacles":8,
     # if rows/colums activated the obstacles will be placed in a semi random
     # spacing
     "number_rows":None,
@@ -34,7 +31,7 @@ DEFAULT_CONFIG={
     # margins expressed in cell if rows/columns not activated
     "margins":[1, 1],
     # obstacle size expressed in cell if rows/columns not activated
-    "obstacle_size":[3,3],
+    "obstacle_size":[1,3],
 
     # flag to activate the verification check of an agent being stuck
     "check_stuck": True,
