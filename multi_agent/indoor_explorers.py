@@ -41,7 +41,7 @@ class IndoorExplorers(gym.Env):
         self.conf=conf
         self._grid_shape = self.conf["size"] #grid_shape #tem os mesmos valores que conf["size"]
         self.n_agents = self.conf["n_agents"] 
-        self.agents = self.create_agents() #TODO verificar se é preciso inicializar mais alguma coisa nesta função
+        self.agents = self.create_agents() 
         self._max_steps = self.conf["max_steps"]
         self._step_count = None
         self._steps_beyond_done = None
@@ -424,7 +424,7 @@ class IndoorExplorers(gym.Env):
         self.create_lidars()
 
         # create an empty exploredMap for each agent and
-        # inserts agents at random locations #TODO mudar para que dê spawn nos cantos do mapa
+        # inserts agents at random locations 
         for agent_i in range(self.n_agents):
             # 0 if not visible/visited, 1 if visible/visited
             self.agents[agent_i].exploredMap = np.zeros(self._grid_shape, dtype=np.double) #exploredMaps[agent_i] = np.zeros(self.SIZE, dtype=np.double)
@@ -555,8 +555,7 @@ class IndoorExplorers(gym.Env):
                 self._steps_beyond_done += 1
 
 
-        return self.get_agents_obs(), rewards, self.get_agents_dones(), {'total_episode_reward' : self._total_episode_reward}  #_agent_dones
-        #the info parameter was: {'prey_alive': self._prey_alive} in the original code, TODO see what extra indo would be useful for me
+        return self.get_agents_obs(), rewards, self.get_agents_dones(), {'total_episode_reward' : self._total_episode_reward} 
 
     #check specific conditions for each agent
     def _checkDone(self, agent_i):
