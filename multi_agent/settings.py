@@ -18,9 +18,8 @@ DEFAULT_CONFIG={
 
     # ======== ENVIROMENT =======
     # configuration regarding the random map generation
-    # absolute num
-    # ber of obstacles, randomly placed in env
-    "obstacles":8,
+    # absolute number of obstacles, randomly placed in env
+    "obstacles":5,
     # if rows/colums activated the obstacles will be placed in a semi random
     # spacing
     "number_rows":None,
@@ -29,9 +28,9 @@ DEFAULT_CONFIG={
     # maximum noise on each axes
     "noise":[0,0],
     # margins expressed in cell if rows/columns not activated
-    "margins":[1, 1],
+    "margins":[1, 1], #left,right,top,bottom margins as percentages that are free
     # obstacle size expressed in cell if rows/columns not activated
-    "obstacle_size":[1,3],
+    "obstacle_size":[3,3],
 
     # flag to activate the verification check of an agent being stuck
     "check_stuck": True,
@@ -44,12 +43,12 @@ DEFAULT_CONFIG={
     "max_steps":400,
 
     # ======== REWARDS ===========
-    "movementCost": 10, #this is discounted for every time step/every movement made (don't put the minus sign!!)
-    "new_cell_disc_reward": 10, #reward value for each new cell discovered
-    "bonus_reward": 1000, #reward for exploring "percentage_explored"% of the map
-    "stuck_reward": -1000, #penalty for getting stuck between positions
-    "collision_reward":-1000, #penalty for colliding with walls
-    "out_of_bounds_reward":-1000, #penalty for going out of the bounds of the map
+    "movementCost": 0.5, #this is discounted for every time step/every movement made (don't put the minus sign!!)
+    "new_cell_disc_reward": 1, #reward value for each new cell discovered
+    "bonus_reward": 400, #reward for exploring "percentage_explored"% of the map
+    "stuck_reward": -400, #penalty for getting stuck between positions
+    "collision_reward":-400, #penalty for colliding with walls
+    "out_of_bounds_reward":-400, #penalty for going out of the bounds of the map
     
 
     # ======== SENSORS | LIDAR =======
@@ -57,7 +56,7 @@ DEFAULT_CONFIG={
     "lidar_channels":32,
 
     # ======== COMMUNICATION =======
-    "comm_range": 3.0, #defines the communication range of each agent
+    "comm_range": 0.0, #defines the communication range of each agent
 
     # ======== VIEWER =========
     "viewer":{"width":21*30,
@@ -71,7 +70,7 @@ DEFAULT_CONFIG={
               "draw_lidar":True, #not used
               "draw_grid":True, #not used
               "draw_traceline":False, #not used
-              "print_map": True, #enables the visualization of the map of each agent individualy, when rendering is active
+              "print_map": False, #enables the visualization of the map of each agent individualy, when rendering is active
               "print_prompts": False #enables the visualization of the map of each agent individualy, when rendering is active
              }
 }

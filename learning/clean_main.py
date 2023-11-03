@@ -31,7 +31,7 @@ if __name__ == '__main__':
     dddqn.q_target.summary()
     
     #train agent
-    exploration_rate = dddqn.run(num_episodes=num_epi, render=True, checkpoint=True, cp_interval=500, cp_render=True,  n_intelligent_agents = 1)
+    exploration_rate = dddqn.run(num_episodes=num_epi, render=False, checkpoint=True, cp_interval=500, cp_render=True,  n_intelligent_agents = 1)
     data.append(exploration_rate)
 
     p.dump(data, open("{}epi_{}agents_movCost{}_{}.p".format(num_epi, GAMES[game], dddqn.env.conf["movementCost"], Now(separate=False)),"wb")) #GAMES[game][0][0], GAMES[game][0][1],GAMES[game][1]

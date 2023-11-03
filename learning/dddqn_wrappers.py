@@ -1,8 +1,11 @@
 import gym
+from gym import spaces
 import retro
 import numpy as np
 import cv2
 import random
+from ma_gym.envs.utils.action_space import MultiAgentActionSpace
+from ma_gym.envs.utils.observation_space import MultiAgentObservationSpace
 # Discretize continuous action space
 class Discretizer(gym.ActionWrapper):
     def __init__(self, env, combos):
@@ -90,23 +93,33 @@ from collections import deque
 class FrameStack(gym.Wrapper):
     def __init__(self, env, k):
         gym.Wrapper.__init__(self, env)
-        (oldh, oldw, _oldc) = env.observation_space.shape
+        (oldh, oldw, _oldc) = env.observation_space[0].shape #antes estava só observatio_space
         newStackShape = (oldh, oldw, k)
-        self.observation_space = gym.spaces.Box(low = 0, high = 255,
-                                                shape = newStackShape,
-                                                dtype = np.uint8)
+        # self.observation_space = gym.spaces.Box(low = 0, high = 255,
+        #                                         shape = newStackShape,
+        #                                         dtype = np.uint8)
+
+        #Needs fixing:
+        #highest value that can be observed in each cell is the max. agent id
+        _obs_high = np.full((env._grid_shape[0], env._grid_shape[1],k), np.array(env.n_agents, dtype=np.float32)) 
+        # #lowest value that can be observed in each cell is 0.0
+        _obs_low = np.full((env._grid_shape[0], env._grid_shape[1],k),np.array(0.0, dtype=np.float32))
+        self.observation_space = MultiAgentObservationSpace(
+            [spaces.Box(_obs_low, _obs_high, (env._grid_shape[0], env._grid_shape[1],k)) for _ in range(env.n_agents)])
+
+        #self.state_shape = tf.reshape(self.env.observation_space, [self.state_shape[0],self.state_shape[1],k])
         self.k = k
         self.frames = deque([], maxlen = k)
 
     def reset(self):
         obs = self.env.reset()
         for _ in range(self.k):
-            self.frames.append(obs)
+            self.frames.append(obs[0]) #antes estava só obs
         return self._get_obs()
 
     def step(self, action):
         obs, reward, done, info = self.env.step(action)
-        self.frames.append(obs)
+        self.frames.append(obs[0])#antes estava só obs
         return self._get_obs(), reward, done, info
 
     def _get_obs(self):
