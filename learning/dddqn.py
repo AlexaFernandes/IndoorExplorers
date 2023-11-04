@@ -268,7 +268,7 @@ class DDDQNAgent(object):
                 self.update_target() #update target network (update_every)
                 self.learn() #fit q model (learn_every)
 
-                exploration_rate_epi.append(np.count_nonzero(self.env._full_obs())/(self.env._grid_shape()[0]*self.env._grid_shape()[1]))#exploration_rate_epi.append(np.count_nonzero(self.env.get_full_obs())/(self.env.get_grid_shape()[0]*self.env.get_grid_shape()[1]))
+                exploration_rate_epi.append(np.count_nonzero(self.env._full_obs)/(self.env._grid_shape[0]*self.env._grid_shape[1]))#exploration_rate_epi.append(np.count_nonzero(self.env.get_full_obs())/(self.env.get_grid_shape()[0]*self.env.get_grid_shape()[1]))
                 if render: self.env.render()
                 if all(done_n):
                     scores.append(score) #store scores for all epsisodes
