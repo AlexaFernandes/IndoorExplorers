@@ -303,6 +303,7 @@ class DDDQNAgent(object):
         action_n = np.full(self.env.n_agents, None)
         self.reset()
         if render: self.env.render()
+        frames.append(self.env.render(mode='rgb_array'))
         while True:
             for i in range(self.env.n_agents):
                 action_n[i] = self.choose_action(training=False, agent_i=i) #get best action for each agent
@@ -326,6 +327,7 @@ class DDDQNAgent(object):
         action_n = np.full(self.env.n_agents, None)
         self.reset()
         if render: self.env.render()
+        frames.append(self.env.render(mode='rgb_array'))
         while True:
             for i in range(self.env.n_agents):
                 action_n[i] = self.choose_action(training=False, agent_i=i) #get best action
