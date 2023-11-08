@@ -3,7 +3,7 @@ DEFAULT_CONFIG={
     #  approach (centralized or not centralized)
     "approach": False,
     #  number of agents
-    "n_agents": 4,
+    "n_agents": 1,
     #  general configuration for the topology of operational area
     "random_spawn": True, # if set to true, initial pos are ignored
     # if random_spawn is set to False, then this list of pos is used to spawn each agent correspondently:
@@ -59,8 +59,8 @@ DEFAULT_CONFIG={
     "comm_range": 0.0, #defines the communication range of each agent
 
     # ======== VIEWER =========
-    "viewer":{"width":21*30,
-              "height":21*30,
+    "viewer":{"width":22*30,
+              "height":22*30,
               "title":"Indoor-Explorers-V01",
               "drone_img":'/home/thedarkcurls/IndoorExplorers/img/drone.png',
               "obstacle_img":'/home/thedarkcurls/IndoorExplorers/img/stone_black2.png',

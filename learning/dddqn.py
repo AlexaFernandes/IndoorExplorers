@@ -39,7 +39,8 @@ class DDDQNAgent(object):
         self.state_shape = self.env.observation_space[0].shape #env state dims
         # self.state_shape = tf.reshape(self.env.observation_space, [self.state_shape[0],self.state_shape[1],1])
         # self.state_shape = self.state_shape.expand_dims()
-        self.state = self.reset() #initialize state
+        self.state = None#self.reset() #initialize state
+        #testing putting frames in here
 
         #training
         self.batch_size=batch_size #batch size
@@ -71,7 +72,7 @@ class DDDQNAgent(object):
         #env = SkipFrames(env)
         # env = Rgb2Gray(env)
         # env = Downsample(env, downsampleRatio)
-        # env = FrameStack(env, numStack)
+        env = FrameStack(env, numStack)
         # env = ScaledFloatFrame(env)
         return env
 
@@ -80,12 +81,21 @@ class DDDQNAgent(object):
     def build_network(self):
     #Build the Dueling DQN Network
         X_input = Input(self.state_shape, name='input')
-        X = Conv2D(filters=32, kernel_size=8, strides=1, activation='relu')(X_input)
-        X = Conv2D(64, 4, 2, activation='relu')(X)
-        X = Conv2D(64, 3, 4, activation='relu')(X)
+        X = Conv2D(16, 4, 1, padding='same', activation='relu')(X_input)#filters=32, kernel_size=8, strides=4, activation='relu')(X_input)
+        X = Conv2D(32, 2, 1, activation='relu')(X)
+        X = Conv2D(32, 1, 1, activation='relu')(X)
         X = Flatten()(X)
-        X = Dense(1024, activation='relu', kernel_initializer='he_uniform')(X)
         X = Dense(512, activation='relu', kernel_initializer='he_uniform')(X)
+        X = Dense(256, activation='relu', kernel_initializer='he_uniform')(X)
+
+        #new test - removing cnn (failed)------------------
+        # X = tf.keras.layers.Dense(128, activation='relu')(X_input)
+        # X =  tf.keras.layers.Dense(128, activation='relu')(X)
+        # X = Flatten()(X)
+        # X =  tf.keras.layers.Dense(1, activation=None)(X)
+        # X =  tf.keras.layers.Dense(env.action_space.n, activation=None)(X)
+        #----------------------------------------------
+
         #value layer
         V = Dense(1, activation='linear', name='V')(X) #V(S)
         #advantage layer
@@ -110,13 +120,10 @@ class DDDQNAgent(object):
             self.memory.append([self.state[0], action, next_state, reward, done])
             #print(" WRONG DIMENSION self.state[0].shape used {}".format(self.state[0].shape))
         else: #em principio nunca entrará aqui
-            print("Não era suposto!")
+            #print("Não era suposto!")
             self.memory.append([self.state, action, next_state, reward, done])
-        #self.state = next_state
+            self.state = next_state #tirei do run e está aqui agora
     
-    def normalize(self):
-        sum_all = np.sum(self.q_eval.predict(self.state[agent_i])[0])
-        return
 
     def choose_action(self, training, agent_i):
     #Predict next action based on current state and decay epsilon.
@@ -126,7 +133,7 @@ class DDDQNAgent(object):
                 #print("random action {}".format(action))
             else: #predict best actions
                 #print(self.q_eval.predict(self.state[agent_i])[0])
-                action = np.argmax(self.q_eval.predict(self.state[agent_i])[0])
+                action = np.argmax(self.q_eval.predict(self.state))#[agent_i]))#[0])
             #decay epsilon, if epsilon falls below min then set to min
             if self.epsilon > self.epsilon_min:
                 self.epsilon *= self.epsilon_decay
@@ -135,7 +142,7 @@ class DDDQNAgent(object):
                 print('Epsilon mininum of {} reached'.format(self.epsilon_min))
         else: #if not training then always get best action
             #print(self.q_eval.predict(self.state[agent_i])[0])
-            action = np.argmax(self.q_eval.predict(self.state[agent_i])[0])
+            action = np.argmax(self.q_eval.predict(self.state))#[agent_i]))#[0])
             print("argmax {}".format(action))
         return action
                 
@@ -146,8 +153,8 @@ class DDDQNAgent(object):
         mini_batch = sample(self.memory, self.batch_size)
         #separate minibatch into elements
         state, action, next_state, reward, done = [np.squeeze(i) for i in zip(*mini_batch)]
-        state = np.expand_dims(state, axis=3)
-        next_state = np.expand_dims(next_state, axis=3)
+        #state = np.expand_dims(state, axis=3)
+        #next_state = np.expand_dims(next_state, axis=3)
         Q = self.q_eval.predict(state, batch_size = self.batch_size) #get Q values for starting states
         Q_next = self.q_eval.predict(next_state) #get Q values for ending states
         Q_target = self.q_target.predict(next_state) #get Q values from target model
@@ -200,7 +207,11 @@ class DDDQNAgent(object):
 
     def reset(self):
     #Reset environment and return expanded state.
-        self.state = np.expand_dims(self.env.reset(), axis=1) #old axis=0 
+        self.state = np.expand_dims(self.env.reset(), axis=0) 
+        #printFrames(self.state, n_agents=2, n_frames=4)
+        # for frame in self.env.frames:
+        #     print(np.matrix(frame))
+        #     print('\n')
         #print("reset self.state.shape {}".format(self.state.shape))
 
     def close(self):
@@ -211,7 +222,14 @@ class DDDQNAgent(object):
     def step(self, action_n):
     #Run one step for given action and return data.
         observation_n, reward_n, done_n, info = self.env.step(action_n)
-        observation_n = np.expand_dims(observation_n, axis=1) #old axis=0 
+        #observation_n here is a stack of 4 frames of agent 0!!
+        observation_n = np.expand_dims(observation_n, axis=0) 
+        
+        # for frame in self.env.frames:
+        #     print(np.matrix(frame))
+        #     print('\n')
+        
+        #printFrames(observation_n, n_agents=2, n_frames=4)
         return observation_n, reward_n, done_n, info
     
     def run(self, num_episodes=100, render=False, checkpoint=False, cp_render=False, cp_interval=None, otype='AVI', n_intelligent_agents = 1):
@@ -256,24 +274,25 @@ class DDDQNAgent(object):
                     print(Style.RESET_ALL)
 
                 obs_n, reward_n, done_n, info = self.step(action_n) #perform action
+                #obs_n here is a stack of 4 frames of agent 0!!
                 #print(reward_n)
                 #TODO should the score be the cumulative score of all agents or just agent 0(the intelligent one)?
                 score += reward_n[0] #cumulative score for episode
                 #print(score)
                 #TODO is this necessary? reward = np.clip(reward_n[0], -1.0, 1.0).item() #clip reward to range [-1.0, 1.0]
                 
-                self.remember(action_n[0], obs_n[0], reward_n[0], done_n[0]) #store results
-                self.state = obs_n #update state 
+                self.remember(action_n[0], obs_n, reward_n[0], done_n[0]) #store results
+                #self.state = obs_n #update state -> está dentro do remember
                 self.steps += 1 #increment steps
                 self.update_target() #update target network (update_every)
                 self.learn() #fit q model (learn_every)
 
-                exploration_rate_epi.append(np.count_nonzero(self.env._full_obs())/(self.env._grid_shape()[0]*self.env._grid_shape()[1]))#exploration_rate_epi.append(np.count_nonzero(self.env.get_full_obs())/(self.env.get_grid_shape()[0]*self.env.get_grid_shape()[1]))
+                exploration_rate_epi.append(np.count_nonzero(self.env.get_full_obs())/(self.env.get_grid_shape()[0]*self.env.get_grid_shape()[1]))#exploration_rate_epi.append(np.count_nonzero(self.env.get_full_obs())/(self.env.get_grid_shape()[0]*self.env.get_grid_shape()[1]))
                 if render: self.env.render()
                 if all(done_n):
                     scores.append(score) #store scores for all epsisodes
                     self.reset()
-                    self.state = self.state#[0] #since we only want to train agent 0, we only need agent's 0 observations
+                    #self.state = self.state#[0] #since we only want to train agent 0, we only need agent's 0 observations
                     exploration_rate.append(exploration_rate_epi)
                     break
             elapsed_time = round((time() - start_time)/60, 2)        
@@ -303,6 +322,7 @@ class DDDQNAgent(object):
         action_n = np.full(self.env.n_agents, None)
         self.reset()
         if render: self.env.render()
+        frames.append(self.env.render(mode='rgb_array'))
         while True:
             for i in range(self.env.n_agents):
                 action_n[i] = self.choose_action(training=False, agent_i=i) #get best action for each agent
@@ -326,6 +346,7 @@ class DDDQNAgent(object):
         action_n = np.full(self.env.n_agents, None)
         self.reset()
         if render: self.env.render()
+        frames.append(self.env.render(mode='rgb_array'))
         while True:
             for i in range(self.env.n_agents):
                 action_n[i] = self.choose_action(training=False, agent_i=i) #get best action

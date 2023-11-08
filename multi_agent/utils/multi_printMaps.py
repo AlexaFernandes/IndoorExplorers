@@ -139,7 +139,7 @@ def print2Map(matrix, n_agents, groundTruthMap):
     ax[1].set_title("Past") #set title name
     #values = np.unique(groundTruthMap.ravel())
 
-    data_3d =  data_3d = get_3d_array(groundTruthMap, _dtype=int)#np.ndarray(shape=(groundTruthMap.shape[0], groundTruthMap.shape[1], 3), dtype=int)
+    data_3d = get_3d_array(groundTruthMap, _dtype=int)#np.ndarray(shape=(groundTruthMap.shape[0], groundTruthMap.shape[1], 3), dtype=int)
     # for i in range(0, groundTruthMap.shape[0]):
     #     for j in range(0, groundTruthMap.shape[1]):
     #         data_3d[i][j] = color_map[groundTruthMap[i][j]]
@@ -245,3 +245,54 @@ def printAgentsMaps(agents, n_agents):
     
     plt.show()
 
+
+def printFrames(frames, n_agents, n_frames):
+    cmap4= ListedColormap(colors1)
+    cmap5= ListedColormap(colors2)
+
+    fig, ax = plt.subplots(1,n_frames, figsize=(5 * n_frames, 4.5), sharex=True, sharey=True)#,figsize=(12,2))
+    fig.set_tight_layout(True)
+
+    grid_shape = frames[0].shape
+
+    for agent_i in range(n_frames): #read agent_i as frame_i
+        ax[agent_i].set_title("Frame {}".format(agent_i)) #set title name
+        matrix = frames[0,:,:, agent_i]
+
+        values = np.unique(matrix.ravel())
+        data_3d = np.ndarray(shape=(grid_shape[0], grid_shape[1], 3), dtype=int)
+
+        for i in range(0, grid_shape[0]):
+            for j in range(0, grid_shape[1]):
+                data_3d[i][j] = color_map[matrix[i][j]]
+
+        if 0.5 in matrix: #if an obstacle as been found the colormap should include the color blue and the colorbar should be accordingly
+            pos=ax[agent_i].imshow(data_3d,cmap=cmap4) #outra alternativa é o matshow, mas assim o titulo nao aparece
+
+        else:
+            pos=ax[agent_i].imshow(data_3d,cmap=cmap5) #outra alternativa é o matshow, mas assim o titulo nao aparece
+
+        #uncomment if you want to print the values of each cell
+        # for i in range(matrix.shape[1]): #collumns
+        #     for j in range(matrix.shape[0]): #rows
+        #         c = matrix[j,i]
+        #         ax[agent_i].text(i, j, str("%.1f"%c), va='center', ha='center')
+
+        #adding grid lines
+        # Set minor ticks/gridline cadence
+        ax[agent_i].yaxis.set_minor_locator(IndexLocator(base=1.0, offset=0.0))
+        ax[agent_i].xaxis.set_minor_locator(IndexLocator(base=1.0, offset=0.0))
+        ax[agent_i].grid(which = "minor", linewidth=1.4)
+        #change tick color to white
+        ax[agent_i].tick_params(which = "minor" ,axis='both', colors='white')
+
+        ax[agent_i].yaxis.set_major_locator(IndexLocator(base=1.0, offset=0.5))
+        ax[agent_i].xaxis.set_major_locator(IndexLocator(base=1.0, offset=0.5))
+
+    patches = [mpatches.Patch(color=colors1[x], label=labels1[x] ) for x in range(n_agents+3) ]
+    
+    # put those patched as legend-handles into the legend
+    plt.legend(handles=patches, bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0. )
+
+    
+    plt.show()

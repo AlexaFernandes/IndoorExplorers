@@ -21,7 +21,7 @@ if __name__ == '__main__':
     #install roms
     #install_roms_in_folder('roms/')
     data = []
-    game = 2 #SELECT WHICH GAME HERE!!
+    game = 0 #SELECT WHICH GAME HERE!!
     #grid_shape, n_agents = game_info
     num_epi = 50000
 
