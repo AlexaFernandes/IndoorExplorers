@@ -71,6 +71,6 @@ DEFAULT_CONFIG={
               "draw_grid":True, #not used
               "draw_traceline":False, #not used
               "print_map": False, #enables the visualization of the map of each agent individualy, when rendering is active
-              "print_prompts": False #enables the visualization of the map of each agent individualy, when rendering is active
+              "print_prompts": True #enables the visualization of the map of each agent individualy, when rendering is active
              }
 }

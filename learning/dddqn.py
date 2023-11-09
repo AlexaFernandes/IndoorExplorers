@@ -133,7 +133,7 @@ class DDDQNAgent(object):
                 #print("random action {}".format(action))
             else: #predict best actions
                 #print(self.q_eval.predict(self.state[agent_i])[0])
-                action = np.argmax(self.q_eval.predict(self.state))#[agent_i]))#[0])
+                action = np.argmax(self.q_eval.predict(self.state[agent_i]))#[0])
             #decay epsilon, if epsilon falls below min then set to min
             if self.epsilon > self.epsilon_min:
                 self.epsilon *= self.epsilon_decay
@@ -142,7 +142,7 @@ class DDDQNAgent(object):
                 print('Epsilon mininum of {} reached'.format(self.epsilon_min))
         else: #if not training then always get best action
             #print(self.q_eval.predict(self.state[agent_i])[0])
-            action = np.argmax(self.q_eval.predict(self.state))#[agent_i]))#[0])
+            action = np.argmax(self.q_eval.predict(self.state[agent_i]))#[0])
             print("argmax {}".format(action))
         return action
                 
@@ -207,8 +207,12 @@ class DDDQNAgent(object):
 
     def reset(self):
     #Reset environment and return expanded state.
-        self.state = np.expand_dims(self.env.reset(), axis=0) 
-        #printFrames(self.state, n_agents=2, n_frames=4)
+        self.state = self.env.reset()#np.expand_dims(self.env.reset(), axis=0) 
+        for frame in self.env.frames[0]:
+            print(np.matrix(frame))
+            print('\n')
+        printFrames(self.state[0], n_agents=self.env.n_agents, n_frames=4)
+        #printFrames(self.state[1], n_agents=self.env.n_agents, n_frames=4)
         # for frame in self.env.frames:
         #     print(np.matrix(frame))
         #     print('\n')
@@ -223,13 +227,14 @@ class DDDQNAgent(object):
     #Run one step for given action and return data.
         observation_n, reward_n, done_n, info = self.env.step(action_n)
         #observation_n here is a stack of 4 frames of agent 0!!
-        observation_n = np.expand_dims(observation_n, axis=0) 
+        #observation_n = np.expand_dims(observation_n, axis=0) 
         
         # for frame in self.env.frames:
         #     print(np.matrix(frame))
         #     print('\n')
         
-        #printFrames(observation_n, n_agents=2, n_frames=4)
+        printFrames(observation_n[0], n_agents=self.env.n_agents, n_frames=4)
+        #printFrames(observation_n[1], n_agents=self.env.n_agents, n_frames=4)
         return observation_n, reward_n, done_n, info
     
     def run(self, num_episodes=100, render=False, checkpoint=False, cp_render=False, cp_interval=None, otype='AVI', n_intelligent_agents = 1):
@@ -281,7 +286,7 @@ class DDDQNAgent(object):
                 #print(score)
                 #TODO is this necessary? reward = np.clip(reward_n[0], -1.0, 1.0).item() #clip reward to range [-1.0, 1.0]
                 
-                self.remember(action_n[0], obs_n, reward_n[0], done_n[0]) #store results
+                self.remember(action_n[0], obs_n[0], reward_n[0], done_n[0]) #store results
                 #self.state = obs_n #update state -> está dentro do remember
                 self.steps += 1 #increment steps
                 self.update_target() #update target network (update_every)

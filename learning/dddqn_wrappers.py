@@ -112,12 +112,14 @@ class FrameStack(gym.Wrapper):
 
         #self.state_shape = tf.reshape(self.env.observation_space, [self.state_shape[0],self.state_shape[1],k])
         self.k = k
-        self.frames = deque([], maxlen = k)
+        self.frames = [deque([], maxlen = k) for _ in range(env.n_agents)]
+        print(np.matrix(self.frames))
 
     def reset(self):
         obs_n = self.env.reset()
-        for _ in range(self.k):
-            self.frames.append(obs_n[0].copy()) #antes estava só obs
+        for agent_i in range(self.env.n_agents):
+            for _ in range(self.k):
+                self.frames[agent_i].append(obs_n[agent_i].copy()) #antes estava só obs
         # for frame in self.frames:
         #     print(np.matrix(frame))
         #     print('\n')
@@ -125,15 +127,20 @@ class FrameStack(gym.Wrapper):
 
     def step(self, action_n):
         obs_n, reward_n, done_n, info = self.env.step(action_n)
-        self.frames.append(obs_n[0].copy())#antes estava só obs
+        for agent_i in range(self.env.n_agents):
+            self.frames[agent_i].append(obs_n[agent_i].copy())#antes estava só obs
         # for frame in self.frames:
         #     print(np.matrix(frame))
         #     print('\n')
         return self._get_obs(), reward_n, done_n, info
 
     def _get_obs(self):
-        assert len(self.frames) == self.k
-        return np.concatenate(self.frames, axis = 2)
+        #assert len(self.frames) == self.k
+        # return np.concatenate(self.frames, axis = 3)
+        list_ = [[] for _ in range(self.env.n_agents)] 
+        for agent_i in range(self.env.n_agents):
+            list_[agent_i]=np.concatenate(self.frames[agent_i], axis = 2)
+        return np.array(list_)
 
 #normalize observation space
 class ScaledFloatFrame(gym.ObservationWrapper):
