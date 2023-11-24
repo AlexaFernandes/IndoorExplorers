@@ -96,5 +96,6 @@ class Lidar:
 
         idx = np.stack((rX, rY), axis=2)
         self.idx = np.reshape(idx, (resolution*self.channels, 2))
+        self.idx = np.unique(self.idx, axis=0)
 
         return self.idx
