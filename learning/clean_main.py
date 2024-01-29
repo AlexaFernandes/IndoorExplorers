@@ -14,14 +14,14 @@ for game_info in [[(16, 16), 1],[(16, 16), 2],[(16, 16), 4],
     _game_name = 'IndoorExplorers{}x{}_{}'.format(grid_shape[0], grid_shape[1],n_agents)
     GAMES.append(_game_name)
 
-MOVES = [0,1,2,3]#,4] #DOWN, LEFT, UP, RIGHT, NO OP 
+MOVES = [0,1,2,3,4] #DOWN, LEFT, UP, RIGHT, NO OP 
 
 if __name__ == '__main__':
 
     #install roms
     #install_roms_in_folder('roms/')
     data = []
-    game = 0 #SELECT WHICH GAME HERE!!
+    game = 1 #SELECT WHICH GAME HERE!!
     #grid_shape, n_agents = game_info
     num_epi = 50000
 
@@ -31,7 +31,7 @@ if __name__ == '__main__':
     dddqn.q_target.summary()
     
     #train agent
-    exploration_rate = dddqn.run(num_episodes=num_epi, render=False, checkpoint=True, cp_interval=500, cp_render=True,  n_intelligent_agents = 1)
+    exploration_rate = dddqn.run(num_episodes=num_epi, render=True, checkpoint=True, cp_interval=500, cp_render=True,  n_intelligent_agents = 1)
     data.append(exploration_rate)
 
     p.dump(data, open("{}epi_{}agents_movCost{}_{}.p".format(num_epi, GAMES[game], dddqn.env.conf["movementCost"], Now(separate=False)),"wb")) #GAMES[game][0][0], GAMES[game][0][1],GAMES[game][1]

@@ -12,13 +12,17 @@ plt.style.use(f"{plotstyle}")
 
 
 CASES = [
+        ["non-learning/for_merging/50000epi_IndoorExplorers16x16_1agents_movCost0.5_28102023051724.p","No stack frame", "Stuck 2" ],
+        ["non-learning/for_merging/50000epi_IndoorExplorers16x16_1agents_movCost0.5_07112023022259.p", "With stack frame", "No stuck" ],
+        ["non-learning/for_merging/50000epi_IndoorExplorers16x16_1agents_movCost0.5_07112023204151.p", "With stack frame", "Stuck 2" ]
         #   ["non-learning/for_merging/50000epi_IndoorExplorers16x16_1agents_movCost0.5_28102023051724.p","1 agent", "No comms" ],          
-          ["non-learning/for_merging/50000epi_IndoorExplorers16x16_2agents_movCost0.5_28102023233923.p","2 agents", "No comms" ],
-          ["non-learning/for_merging/50000epi_IndoorExplorers16x16_2agents_movCost0.5_28102023195129.p","2 agents", "Comms range 1.0" ],
-          ["non-learning/for_merging/50000epi_IndoorExplorers16x16_2agents_movCost0.5_28102023161334.p","2 agents", "Comms range 3.0" ],
+        #   ["non-learning/for_merging/50000epi_IndoorExplorers16x16_2agents_movCost0.5_28102023233923.p","2 agents", "No comms" ],
+        #   ["non-learning/for_merging/50000epi_IndoorExplorers16x16_2agents_movCost0.5_28102023195129.p","2 agents", "Comms range 1.0" ],
+        #   ["non-learning/for_merging/50000epi_IndoorExplorers16x16_2agents_movCost0.5_28102023161334.p","2 agents", "Comms range 3.0" ],
         #   ["non-learning/for_merging/50000epi_IndoorExplorers16x16_4agents_movCost0.5_29102023054705.p","4 agents", "No comms" ]
 
          ]
+
 
 #with obstacle 5
         #   ["non-learning/for_merging/50000epi_IndoorExplorers16x16_1agents_movCost0.5_28102023051724.p","1 agent", "No comms" ],          
@@ -55,7 +59,7 @@ if __name__ == "__main__":
     dict["Scenario"] = []
     dict["Steps"] = []
     dict["Explored Area [%]"] = []
-    dict["Communication Policy"] = []
+    dict["Exploration Policy"] = []
 
     for file, area, exploration_type in CASES:
 
@@ -66,10 +70,10 @@ if __name__ == "__main__":
                 dict["Scenario"].append(area)
                 dict["Steps"].append(distance)
                 dict["Explored Area [%]"].append(explored)
-                dict["Communication Policy"].append(exploration_type)
+                dict["Exploration Policy"].append(exploration_type)
 
     df = pd.DataFrame(dict)
 
     sns.lineplot(data=df, x="Steps", y="Explored Area [%]",
-                 hue="Communication Policy", style="Scenario").set(title='Percentage of area explored by 2 agents \n in a 16x16 map with 5 obstacles and stuck method 2\n in different communication conditions')
+                 hue="Exploration Policy", style="Scenario").set(title='Percentage of area explored by a single agent \n in a 16x16 map with 5 obstacles and stack frame\n with different stuck methods')
     plt.show()

@@ -3,12 +3,12 @@ DEFAULT_CONFIG={
     #  approach (centralized or not centralized)
     "approach": False,
     #  number of agents
-    "n_agents": 1,
+    "n_agents": 2,
     #  general configuration for the topology of operational area
-    "random_spawn": True, # if set to true, initial pos are ignored
+    "random_spawn": False, # if set to true, initial pos are ignored
     # if random_spawn is set to False, then this list of pos is used to spawn each agent correspondently:
-    "initial": [ [0,0],
-                 [0,2],
+    "initial": [ [1,0],
+                 [1,4],
                  [3,0],
                  [3,1]
                 ],
@@ -33,7 +33,7 @@ DEFAULT_CONFIG={
     "obstacle_size":[3,3],
 
     # flag to activate the verification check of an agent being stuck
-    "check_stuck": True,
+    "check_stuck": False,
     # method to check if it is stuck
         #1: count the number of steps where the agent does not discover any new cell, if it reaches height*width => agent is stuck
         #2: registers the last 50 positions, and if the most common one is repeated 10 times, then it is stuck
@@ -52,7 +52,7 @@ DEFAULT_CONFIG={
     
 
     # ======== SENSORS | LIDAR =======
-    "lidar_range":3, #defines the LiDAR range
+    "lidar_range":4, #defines the LiDAR range
     "lidar_channels":32,
 
     # ======== COMMUNICATION =======
@@ -70,7 +70,7 @@ DEFAULT_CONFIG={
               "draw_lidar":True, #not used
               "draw_grid":True, #not used
               "draw_traceline":False, #not used
-              "print_map": False, #enables the visualization of the map of each agent individualy, when rendering is active
+              "print_map": True, #enables the visualization of the map of each agent individualy, when rendering is active
               "print_prompts": True #enables the visualization of the map of each agent individualy, when rendering is active
              }
 }

@@ -113,7 +113,7 @@ class FrameStack(gym.Wrapper):
         #self.state_shape = tf.reshape(self.env.observation_space, [self.state_shape[0],self.state_shape[1],k])
         self.k = k
         self.frames = [deque([], maxlen = k) for _ in range(env.n_agents)]
-        print(np.matrix(self.frames))
+        #print(np.matrix(self.frames))
 
     def reset(self):
         obs_n = self.env.reset()
@@ -136,7 +136,7 @@ class FrameStack(gym.Wrapper):
 
     def _get_obs(self):
         #assert len(self.frames) == self.k
-        # return np.concatenate(self.frames, axis = 3)
+        # return np.concatenate(self.frames, axis = 2) #OLD
         list_ = [[] for _ in range(self.env.n_agents)] 
         for agent_i in range(self.env.n_agents):
             list_[agent_i]=np.concatenate(self.frames[agent_i], axis = 2)

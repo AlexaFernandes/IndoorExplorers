@@ -2,6 +2,7 @@
 # Write Python 3 code in this online editor and run it.
 # Online Python-3 Compiler (Interpreter)
 from multi_agent.utils.randomMapGenerator import Generator
+from multi_agent.utils.multi_agent_lidarSensor import Lidar
 from multi_agent.settings import DEFAULT_CONFIG as conf
 import numpy as np
 import random
@@ -165,7 +166,8 @@ def connectedComponents(matrix, n_agents):
     return cc
 
 if __name__ == "__main__":
-    agents = [Agent() for i in range(4)]
+    n_agents=4
+    agents = [Agent() for i in range(n_agents)]
     for i, agent in enumerate(agents):
         agent.name = 'agent %d' % i
         agent.id = i
@@ -175,10 +177,76 @@ if __name__ == "__main__":
         # agent.silent = True
         #initialize other properties
     
-    agents[0].in_range
+    # agents[1].pos=[4,0]
+    # agents[2].pos=[4,1]
+    # agents[3].pos=[4,2] 
+    #agents[0].in_range
 
     gen = Generator(conf)
-    groundTruthMap = gen.get_map().astype(np.double)
+    #groundTruthMap = gen.get_map().astype(np.double)
+    groundTruthMap=  np.array([[0.3, 0.3 ,0.3, 0.5, 0.3, 0.3] ,
+                               [0.3, 0.3, 0.3, 0.5, 0.3, 0.3],
+                               [0.3, 0.3, 0.3, 0.5, 0.3, 0.3],
+                               [0.3, 0.3, 0.3, 0.3, 0.3, 0.3],
+                               [0.3, 0.3, 0.3, 0.5, 0.3, 0.3],
+                               [0.3, 0.3, 0.3, 0.5, 0.3, 0.3]
+                                ]  )  
+    # #printMap(groundTruthMap,n_agents)
+    _grid_shape = groundTruthMap.shape
+    lidar_map = groundTruthMap.copy()
+    lidar_map[lidar_map == 0.5] = 1.0 #obstacle value is 0.5
+    lidar_map[lidar_map == 0.3] = 0.0 #explored cells, which value is 0.3
+    #print(np.matrix(lidar_map))
+    #print(conf["lidar_range"])
+    #CREATE LIDAR
+    #create an array of lidar, one per agent
+    ldr = [Lidar(r=conf["lidar_range"],
+                        channels=conf["lidar_channels"],
+                        _map=lidar_map)                   for _ in range(n_agents)]
+    #print(ldr[0].maxRange)
+    #create list of obstacle indexes
+    # obstacles_idx = np.where(groundTruthMap == 0.5)
+    # obstacles_x = obstacles_idx[0]
+    # obstacles_y = obstacles_idx[1]
+    # obstacles_idx = np.stack((obstacles_x, obstacles_y), axis=1)
+    # obstacles_idx = [list(i) for i in obstacles_idx]
+    
+
+    #ACTIVATE LIDAR 
+    indexes = [None for _ in range(n_agents)]
+    for agent_i in range(n_agents): 
+        #print("LIDAR: is alive:{} ,agent {}, with pos{}".format(self.agents[agent_i].is_alive(), agent_i, self.agents[agent_i].pos))
+        ldr[agent_i].update(agents[agent_i].pos)
+        #thetas[agent_i], ranges[agent_i] = self.ldr[agent_i].thetas, self.ldr[agent_i].ranges
+        indexes[agent_i] = ldr[agent_i].idx
+    
+    lidarX = indexes[0][:,0]
+    lidarY = indexes[0][:,1]
+    #lidar_idx = np.stack((lidarX, lidarY), axis=1)
+
+    row=1
+    col=0
+    agent_i=0
+    for pos in indexes[0]:
+        if list(pos) == [row,col]:
+            print("{} can see{}".format(agent_i, pos))
+            break
+        # if lidar_map[pos[0]][pos[1]] == 1.0:
+        #     print("[{}] Wall".format(pos))
+        # elif list(pos) == [row,col]:
+        #     print("{}  HERE".format(pos))
+        # elif list(pos) == agents[0].pos:
+        #     print("{} - agent 0 pos".format(pos))
+        # elif list(pos) == agents[1].pos:
+        #     print("{} - agent 1 pos".format(pos))
+        # else:
+        #     print("[{}] FREE".format(pos))
+    # for col in range(0, _grid_shape[1]):
+    #         for row in range(0, _grid_shape[0]):
+    #             if [row,col] not in indexes[0]:
+    #                 print("[{},{}] not in range".format(row,col))
+    
+    # printMap(groundTruthMap,n_agents)
     # [[1.0, 0.3 ,0.3] ,
     #                   [0.3, 1.0, 0.3],
     #                   [1.0, 0.3, 0.3]
@@ -298,7 +366,7 @@ if __name__ == "__main__":
     #                      [1, 0, 0, 0],
     #                      [1, 0, 0, 0]
     #                      ])
-    # mat=matrix3         
+    # mat=matrix2         
     # print(mat)
     # comm_range = update_comm_range(agents,4)
     
@@ -306,6 +374,7 @@ if __name__ == "__main__":
     # groups=[]
     # groups = connectedComponents(mat,n_agents=4)
     # for group in groups:
+    #     print(len(group))
     #     print(group)
 
 
@@ -372,10 +441,76 @@ most_freq_elem=count2[0]
 
 #--------------------------------------------------------------------------
 
-agents[0].collision=False
-agents[0].out_of_bounds=True
+# agents[0].collision=False
+# agents[0].out_of_bounds=True
 
-print(agents[0].is_alive())
+# print(agents[0].is_alive())
 
+#--------------------------------------------------------------------------
+#test how to get coordinates of agent if it exists
+# mat1 =np.array([ [0.0, 0.0, 0.0 , 0.0],
+#                      [0.0, 0.0, 1.0, 0.3 ],
+#                      [0.0, 0.0, 0.0, 0.0],
+#                      [0.0, 0.0, 0.0, 0.0]
+#                 ])
 
+# mat2 =np.array([ [0.0, 0.0, 0.3 , 2.0],
+#                      [0.0, 0.0, 4.0, 0.3 ],
+#                      [0.0, 0.0, 0.0, 0.0],
+#                      [0.0, 0.0, 0.0, 0.0]
+#                 ])
 
+# mat=mat1
+# agent = 1
+# agent_i= agent-1
+# x,y = np.where(mat==agent_i+1)
+# coord = np.array(list(zip(x, y)))
+# agent_pos=[1,2]
+
+# l = []
+# l.extend(range(0, n_agents))
+# #generate a list with all the unique pairings among all agents
+# combinations = list(itertools.combinations(l, 2))
+# print(combinations)
+
+# print(coord)
+# if len(coord) == 0:
+#     print("empty")
+# elif len(coord) == 1:
+#     #check if corresponding pos is right
+#     pos=coord[0]
+#     if list(pos) == agent_pos: #agents[agent_idx].pos:
+#         print("alright")
+#     else:
+#         print("u have the wrong pos, fix it!")
+#         mat[pos[0]][pos[1]]=0.3 #mark as explored
+#         mat[agent_pos[0]][agent_pos[1]]= agent_i + 1
+
+# else:
+#     #há mais do que 1 ocorrencia
+#     #comparar com a pos atual e pôr as outras a "empty"
+#     for pos in coord:
+#         if list(pos) == agent_pos: #agents[agent_idx].pos:
+#             print("this is the right pos {}".format(pos))
+#         else:
+#             mat[pos[0]][pos[1]]=0.3 #mark as explored
+
+# print(mat)
+
+#---------------------------------------
+#testing continue statement
+# for agent_i in range(n_agents):
+#         print(agent_i)
+
+#         #verify if for each agent pos in agent_i's map there is only 1 entrance of every other agent (agent_j)
+#         #and if that entrance is correct
+#         for agent_j in range(n_agents): 
+#             # if agent_i != agent_j:
+#             #     print("{}-{}".format(agent_i,agent_j))
+#             # else:
+#             #     print("equal")
+#             if agent_i == agent_j:
+#                 continue
+#                 print("equal")
+#             else:
+#                 print("{}-{}".format(agent_i,agent_j))

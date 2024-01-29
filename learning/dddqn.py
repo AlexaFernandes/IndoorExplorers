@@ -116,13 +116,8 @@ class DDDQNAgent(object):
     def remember(self, action, next_state, reward, done):
     #Store data in memory and update current state.
         #print("remember self.state.shape {}, NDIM {}".format(self.state.shape, self.state.ndim))
-        if self.state.ndim > 4: #this happens when we do reset, and we only need the info from agent 0 to remember
-            self.memory.append([self.state[0], action, next_state, reward, done])
-            #print(" WRONG DIMENSION self.state[0].shape used {}".format(self.state[0].shape))
-        else: #em principio nunca entrará aqui
-            #print("Não era suposto!")
-            self.memory.append([self.state, action, next_state, reward, done])
-            self.state = next_state #tirei do run e está aqui agora
+        self.memory.append([self.state[0], action, next_state, reward, done])
+        #self.state = next_state #não pode ficar aqui pq o state é de acordo com o obs_n e o next_state é só do agente 0
     
 
     def choose_action(self, training, agent_i):
@@ -133,7 +128,7 @@ class DDDQNAgent(object):
                 #print("random action {}".format(action))
             else: #predict best actions
                 #print(self.q_eval.predict(self.state[agent_i])[0])
-                action = np.argmax(self.q_eval.predict(self.state[agent_i]))#[0])
+                action = np.argmax(self.q_eval.predict(np.expand_dims(self.state[agent_i],axis=0))[0])
             #decay epsilon, if epsilon falls below min then set to min
             if self.epsilon > self.epsilon_min:
                 self.epsilon *= self.epsilon_decay
@@ -142,7 +137,7 @@ class DDDQNAgent(object):
                 print('Epsilon mininum of {} reached'.format(self.epsilon_min))
         else: #if not training then always get best action
             #print(self.q_eval.predict(self.state[agent_i])[0])
-            action = np.argmax(self.q_eval.predict(self.state[agent_i]))#[0])
+            action = np.argmax(self.q_eval.predict( np.expand_dims(self.state[agent_i],axis=0))[0])
             print("argmax {}".format(action))
         return action
                 
@@ -207,11 +202,11 @@ class DDDQNAgent(object):
 
     def reset(self):
     #Reset environment and return expanded state.
-        self.state = self.env.reset()#np.expand_dims(self.env.reset(), axis=0) 
-        for frame in self.env.frames[0]:
-            print(np.matrix(frame))
-            print('\n')
-        printFrames(self.state[0], n_agents=self.env.n_agents, n_frames=4)
+        self.state = self.env.reset()
+        # for frame in self.env.frames[0]:
+        #     print(np.matrix(frame))
+        #     print('\n')
+        #printFrames(self.state[0], n_agents=self.env.n_agents, n_frames=4)
         #printFrames(self.state[1], n_agents=self.env.n_agents, n_frames=4)
         # for frame in self.env.frames:
         #     print(np.matrix(frame))
@@ -226,14 +221,13 @@ class DDDQNAgent(object):
     def step(self, action_n):
     #Run one step for given action and return data.
         observation_n, reward_n, done_n, info = self.env.step(action_n)
-        #observation_n here is a stack of 4 frames of agent 0!!
         #observation_n = np.expand_dims(observation_n, axis=0) 
         
         # for frame in self.env.frames:
         #     print(np.matrix(frame))
         #     print('\n')
         
-        printFrames(observation_n[0], n_agents=self.env.n_agents, n_frames=4)
+        #printFrames(observation_n[0], n_agents=self.env.n_agents, n_frames=4)
         #printFrames(observation_n[1], n_agents=self.env.n_agents, n_frames=4)
         return observation_n, reward_n, done_n, info
     
@@ -243,16 +237,15 @@ class DDDQNAgent(object):
     #If checkpoint is true then save model weights and log and evaluate the model and convert and save the frames
     #every cp_interval number of of episodes. The evaluation is rendered if cp_render is true.
 
-        #self.load('learning/models',"DDDQN_50000_IndoorExplorers16x16_1_movCost10_stuck2_20102023133637_QEval.h5","DDDQN_50000_IndoorExplorers16x16_1_movCost10_stuck2_20102023133637_QTarget.h5") #use the latest
-        #self.load('learning/models',"DDDQN_50000_IndoorExplorers16x16_1_movCost0.5_stuck2_28102023051724_QEval.h5","DDDQN_50000_IndoorExplorers16x16_1_movCost0.5_stuck2_28102023051724_QTarget.h5")
+        #self.load('learning/models') #use the latest
+        #self.load('learning/models',"DDDQN_50000_IndoorExplorers16x16_1_movCost0.5_stuck2_07112023204150_QEval.h5","DDDQN_50000_IndoorExplorers16x16_1_movCost0.5_stuck2_07112023204150_QTarget.h5")
         printSTR = 'Episode: {}/{} | Score: {:.4f} | AVG 50: {:.4f} | Elapsed Time: {} mins'
         start_time = time()
         scores = []
         exploration_rate = []
         action_n = np.full(self.env.n_agents, None)
-        self.reset()
+        self.reset() #state is updated inside this function
         if render: self.env.render()
-        #self.state = self.state#[0] #since we only want to train agent 0, we only need agent's 0 observations
         for e in range(1, num_episodes + 1):
             score = 0
             done_n = [False for _ in range(self.env.n_agents)]
@@ -284,10 +277,12 @@ class DDDQNAgent(object):
                 #TODO should the score be the cumulative score of all agents or just agent 0(the intelligent one)?
                 score += reward_n[0] #cumulative score for episode
                 #print(score)
-                #TODO is this necessary? reward = np.clip(reward_n[0], -1.0, 1.0).item() #clip reward to range [-1.0, 1.0]
+                #I removed reward clipping since I wanted the agent to be able to discern between different negative values and different positive values
+                #for instance having a reward of 200 is better than 50, since a the highest value means a larger area was covered
+                #reward = np.clip(reward_n[0], -1.0, 1.0).item() #clip reward to range [-1.0, 1.0]
                 
                 self.remember(action_n[0], obs_n[0], reward_n[0], done_n[0]) #store results
-                #self.state = obs_n #update state -> está dentro do remember
+                self.state = obs_n #update state -> não pode estar dentro do remember pq o state tem as obs de todos
                 self.steps += 1 #increment steps
                 self.update_target() #update target network (update_every)
                 self.learn() #fit q model (learn_every)
@@ -296,8 +291,8 @@ class DDDQNAgent(object):
                 if render: self.env.render()
                 if all(done_n):
                     scores.append(score) #store scores for all epsisodes
-                    self.reset()
-                    #self.state = self.state#[0] #since we only want to train agent 0, we only need agent's 0 observations
+                    self.reset() #state is updated inside this function
+                    if render: self.env.render()
                     exploration_rate.append(exploration_rate_epi)
                     break
             elapsed_time = round((time() - start_time)/60, 2)        
@@ -325,7 +320,7 @@ class DDDQNAgent(object):
         frames = []
         score = 0
         action_n = np.full(self.env.n_agents, None)
-        self.reset()
+        self.reset() #state is updated inside this function
         if render: self.env.render()
         frames.append(self.env.render(mode='rgb_array'))
         while True:
@@ -338,7 +333,8 @@ class DDDQNAgent(object):
             if render: self.env.render()
             frames.append(self.env.render(mode='rgb_array'))
             if all(done_n):
-                self.reset()
+                self.reset() #state is updated inside this function
+                if render: self.env.render()
                 break
         return score, frames
             
@@ -349,7 +345,7 @@ class DDDQNAgent(object):
         frames = []
         score = 0
         action_n = np.full(self.env.n_agents, None)
-        self.reset()
+        self.reset() #state is updated inside this function
         if render: self.env.render()
         frames.append(self.env.render(mode='rgb_array'))
         while True:
@@ -362,7 +358,8 @@ class DDDQNAgent(object):
             if render_and_save: frames.append(self.env.render(mode='rgb_array'))
             if all(done_n):
                 print('Finished! Score: {}'.format(score))
-                self.reset()
+                self.reset() #state is updated inside this function
+                if render: self.env.render()
                 break
         if render_and_save:
             if self.env.conf["check_stuck"]:
