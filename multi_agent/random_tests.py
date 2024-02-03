@@ -144,13 +144,13 @@ def DFSUtil(matrix, temp, v, visited, n_agents):
     # Repeat for all vertices adjacent
     # to this vertex v
     for j in range(0,n_agents):
-        #go through the upper triangular matrix (since the matrix is simmetric, we olny need to go through one of the triangular matrices)
-        if (v < j):
-            if matrix[v][j] == 1: #if they are connected
-                if visited[j] == False:
-                    # Update the list
-                    temp = DFSUtil(matrix,temp, j, visited, n_agents)
-                
+        #go through the upper triangular matrix (since the matrix is simmetric, we olny need to go through one of the triangular matrices) <-THIS WAS WRONG!!  it was deleted from the final code
+        #if (v < j): <- deleted in the final code
+        if matrix[v][j] == 1: #if they are connected
+            if visited[j] == False:
+                # Update the list
+                temp = DFSUtil(matrix,temp, j, visited, n_agents)
+            
     return temp
 
 
@@ -349,24 +349,44 @@ if __name__ == "__main__":
 
     #------------------------------------------------
     #test connectivity:
-    # matrix =  [ [0, 1, 0, 0],
-    #             [1, 0, 1, 0],
-    #             [0, 1, 0, 1],
-    #             [0, 0, 1, 0]
-    #             ]
+    # matrix =  np.array([ [0, 1, 0, 0],
+    #                     [1, 0, 1, 0],
+    #                     [0, 1, 0, 1],
+    #                     [0, 0, 1, 0]
+    #                     ])
+    #                     #correct groups: [0,1,2,3]
     
-    # matrix2 =  [[0, 0, 0, 0],
+    # matrix2 =  np.array([[0, 0, 0, 0],
     #             [0, 0, 0, 0],
     #             [0, 0, 0, 1],
     #             [0, 0, 1, 0]
-    #             ]
+    #             ])
+    #             #correct groups: [0] [1] [2,3]
 
     # matrix3=  np.array([ [0, 1, 1, 1],
     #                      [1, 0, 0, 0],
     #                      [1, 0, 0, 0],
     #                      [1, 0, 0, 0]
     #                      ])
-    # mat=matrix2         
+    #                      #correct groups: [0,1,2,3]
+    # matrix4=np.array([ [0, 0, 0, 1],
+    #                    [0, 0, 1, 1],
+    #                    [0, 1, 0, 1],
+    #                    [1, 1, 1, 0]
+    #                 ])
+    #                 #correct groups: [0,1,2,3]
+    # matrix5 =  np.array([[0, 0, 0, 0],
+    #             [0, 0, 0, 0],
+    #             [0, 0, 0, 0],
+    #             [0, 0, 0, 0]
+    #             ])
+    #             #correct groups: [0] [1] [2] [3]
+    # matrix6 =  np.array([[0, 1, 1, 0],
+    #             [1, 0, 0, 0],
+    #             [1, 0, 0, 0],
+    #             [0, 0, 0, 0]
+    #             ])
+    # mat=matrix6
     # print(mat)
     # comm_range = update_comm_range(agents,4)
     

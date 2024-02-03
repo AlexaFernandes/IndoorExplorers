@@ -3,14 +3,14 @@ DEFAULT_CONFIG={
     #  approach (centralized or not centralized)
     "approach": False,
     #  number of agents
-    "n_agents": 2,
+    "n_agents": 4,
     #  general configuration for the topology of operational area
     "random_spawn": False, # if set to true, initial pos are ignored
     # if random_spawn is set to False, then this list of pos is used to spawn each agent correspondently:
-    "initial": [ [1,0],
-                 [1,4],
-                 [3,0],
-                 [3,1]
+    "initial": [ [0,0],
+                 [0,15],
+                 [15,0],
+                 [15,15]
                 ],
     "size":[16,16],
     #  configuration regarding the movements of uav
@@ -19,7 +19,7 @@ DEFAULT_CONFIG={
     # ======== ENVIROMENT =======
     # configuration regarding the random map generation
     # absolute number of obstacles, randomly placed in env
-    "obstacles":5,
+    "obstacles":0,
     # if rows/colums activated the obstacles will be placed in a semi random
     # spacing
     "number_rows":None,
@@ -52,11 +52,11 @@ DEFAULT_CONFIG={
     
 
     # ======== SENSORS | LIDAR =======
-    "lidar_range":4, #defines the LiDAR range
+    "lidar_range":1, #defines the LiDAR range
     "lidar_channels":32,
 
     # ======== COMMUNICATION =======
-    "comm_range": 0.0, #defines the communication range of each agent
+    "comm_range": 3.0, #defines the communication range of each agent
 
     # ======== VIEWER =========
     "viewer":{"width":22*30,

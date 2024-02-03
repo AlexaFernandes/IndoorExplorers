@@ -69,7 +69,6 @@ class IndoorExplorers(gym.Env):
         #               0.0 unexplored
         #               >1  agent id
                                                                           
-        self.past_full_obs = np.full(self._grid_shape, PRE_IDS['unexplored'])
 
         #matrix that tells which agents are in range of each - adjacency matrix
         self.comm_range = np.full((self.n_agents,self.n_agents), 0)
@@ -143,8 +142,6 @@ class IndoorExplorers(gym.Env):
         for col in range(0, self._grid_shape[1]):
             for row in range(0, self._grid_shape[0]):
                 for agent_i in agent_list:
-                    # lidarX = self.lidarsIndexes[agent_i][:,0] -> cannot use this since it would override info from other agents!!
-                    # lidarY = self.lidarsIndexes[agent_i][:,1]
                     if (self.agents[agent_i].is_alive()) and (not self.agents[agent_i].done):
                         #if that pos is in agent_i's line of sight add its info
                         if self.is_pos_in_LOS_of(row,col, agent_i):
@@ -165,16 +162,12 @@ class IndoorExplorers(gym.Env):
         for agent_i in agent_list:
             if (self.agents[agent_i].is_alive()) and (not self.agents[agent_i].done):
                 agent_pos = self.agents[agent_i].pos
-                #print("MERGE_MAP: is alive:{} , agent {}, with pos{}".format(self.agents[agent_i].is_alive(),agent_i, agent_pos))
                 new_merged_map[agent_pos[0]][agent_pos[1]] = agent_i + 1
 
         #save a copy of the new map (it needs to be a copy otherwise they will have all the same reference and will be changing the same object)
         for agent_i in agent_list:
             if (self.agents[agent_i].is_alive()) and (not self.agents[agent_i].done):
                 self.agents[agent_i].exploredMap = new_merged_map.copy()
-        # if (self.exploredMap==map).all():
-        #     return
-        # else:  
 
     #updates comm_range adjacency matrix - to see which agents are in range of others
     def update_comm_range(self):
@@ -207,13 +200,11 @@ class IndoorExplorers(gym.Env):
         # Repeat for all vertices adjacent
         # to this vertex v
         for j in range(0, self.n_agents):
-            #go through the upper triangular matrix (since the matrix is simmetric, we only need to go through one of the triangular matrices)
-            if (agent_i < j): 
-                if (self.agents[agent_i].is_alive() and not self.agents[agent_i].done) and (self.agents[j].is_alive() and not self.agents[j].done): #if both involved agents are alive and not done yet
-                    if self.comm_range[agent_i][j] == 1: #if they are connected
-                        if visited[j] == False:
-                            # Update the list
-                            temp = self.DFSUtil(temp, j, visited)
+            if (self.agents[agent_i].is_alive() and not self.agents[agent_i].done) and (self.agents[j].is_alive() and not self.agents[j].done): #if both involved agents are alive and not done yet
+                if self.comm_range[agent_i][j] == 1: #if they are connected
+                    if visited[j] == False:
+                        # Update the list
+                        temp = self.DFSUtil(temp, j, visited)
                     
         return temp
 
@@ -320,41 +311,24 @@ class IndoorExplorers(gym.Env):
         if next_pos is not None and self._is_cell_vacant(next_pos):
             self.agents[agent_i].pos = next_pos
             self._full_obs[curr_pos[0]][curr_pos[1]] = PRE_IDS['empty/explored']
-            # self.agents[agent_i].pastExploredMap = self.agents[agent_i].exploredMap.copy()
-            # self.__update_agents_view()
-
             if self.conf["viewer"]["print_prompts"]: print("agent {} - alright".format(agent_i))
+
         elif next_pos in self.obstacles_idx: #collision with an obstacle ( I am adding collisions so it does not get stuck against walls)
             self.agents[agent_i].collision = True
-
-            #fill_cell(self._base_img, self.agents[agent_i].pos, cell_size=CELL_SIZE, fill='white') #before changing agent's pos to None, change base image for correct render
-            self.agents[agent_i].pos = None
             self._full_obs[curr_pos[0]][curr_pos[1]] = PRE_IDS['empty/explored'] #it disappears from the map
-            # self.agents[agent_i].pastExploredMap = self.agents[agent_i].exploredMap.copy()
-            # self.__update_agents_view() #TODO ADICIONEI AGORA 29/01 16:35
-
             if self.conf["viewer"]["print_prompts"]: print("agent {} - obstacle".format(agent_i))
+
         elif not self.is_valid(next_pos): # is outside of bounds
             self.agents[agent_i].out_of_bounds = True
-
-            #fill_cell(self._base_img, self.agents[agent_i].pos, cell_size=CELL_SIZE, fill='white') #before changing agent's pos to None, change base image for correct render
-            self.agents[agent_i].pos = None
             self._full_obs[curr_pos[0]][curr_pos[1]] = PRE_IDS['empty/explored'] #it disappears from the map
-            # self.agents[agent_i].pastExploredMap = self.agents[agent_i].exploredMap.copy()
-            # self.__update_agents_view()  #TODO ADICIONEI AGORA 29/01 16:35
-
             if self.conf["viewer"]["print_prompts"]: print("agent {} - outside".format(agent_i))
+
         else: #if a random action is no op or possible collision with other agent -> does nothing (keeps the same pos)
             self.agents[agent_i].pos = curr_pos
-            # self.agents[agent_i].pastExploredMap = self.agents[agent_i].exploredMap.copy()
-            # self.__update_agents_view() #even if the agent doesn't move, it needs to update its comm_range 
-
             if self.conf["viewer"]["print_prompts"]: print("agent {} - no op or prevented agent collision".format(agent_i))
 
         self.agents[agent_i].pastExploredMap = self.agents[agent_i].exploredMap.copy()
         self.__update_agents_view() 
-
-
 
     #check which would the the next_pos if hipotethicaly the specified "move" was applied
     def __next_pos(self, curr_pos, move):
@@ -400,11 +374,9 @@ class IndoorExplorers(gym.Env):
 
     #update each agent's map and _full_obs with new info gathered from lidar scans
     def _updateMaps(self):
-        self.past_full_obs = self._full_obs.copy()
         #update maps with lidar info
         for agent_i in range(self.n_agents):
             if self.agents[agent_i].is_alive() and (not self.agents[agent_i].done): #if agent_i is alive and isn't done
-                #self.agents[agent_i].pastExploredMap = self.agents[agent_i].exploredMap.copy()
 
                 lidarX = self.lidarsIndexes[agent_i][:,0]
                 lidarY = self.lidarsIndexes[agent_i][:,1]
@@ -412,10 +384,7 @@ class IndoorExplorers(gym.Env):
                 #update what lidars has scanned without any agents
                 self.agents[agent_i].exploredMap[lidarX, lidarY] = self.groundTruthMap[lidarX, lidarY] 
                 self._full_obs[lidarX, lidarY] = self.groundTruthMap[lidarX, lidarY]        
-                #print("agent {}".format(agent_i))
-                #print2Map(self._full_obs, self.n_agents,self.agents[agent_i].exploredMap)
-        # print("both-only with blank")
-        # print2Map(self.agents[0].exploredMap, self.n_agents,self.agents[1].exploredMap)
+        
 
         #update agents pos in _full_obs: -> needs to be done after, so the lidar info does not override the pos of agents in _full_obs
         for agent_i in range(self.n_agents):
@@ -427,6 +396,7 @@ class IndoorExplorers(gym.Env):
         # printMap(self._full_obs, self.n_agents)
         #print("both")
         #print2Map(self.agents[0].exploredMap, self.n_agents,self.agents[1].exploredMap)
+
         # #other agent's pos who are in line of sight must be updated last
         # for agent_i in range(self.n_agents):
         #     if self.agents[agent_i].is_alive() and (not self.agents[agent_i].done):
@@ -452,29 +422,29 @@ class IndoorExplorers(gym.Env):
                             x,y = np.where(self.agents[agent_i].exploredMap==agent_j+1)
                             coord = np.array(list(zip(x, y))) #is an array with pairs of coordinates of agent's positions
 
-                            print("coord:{} of agent {} in agent's {} map".format(coord, agent_j, agent_i))
+                            #print("coord:{} of agent {} in agent's {} map".format(coord, agent_j, agent_i))
                             if len(coord) == 0:
-                                print("empty")
+                                #print("empty")
                                 continue
                             elif len(coord) == 1:
                                 #check if corresponding pos is right and agent_j is still in LOS of agent_i
                                 pos=coord[0]
                                 if list(pos) == self.agents[agent_j].pos:
                                     if self.is_pos_in_LOS_of(pos[0],pos[1],agent_i):
-                                        print("alright")
+                                        #print("alright")
                                         continue
                                     else: #remove entry 
-                                        print("out of sight, removed")
+                                        #print("out of sight, removed")
                                         self.agents[agent_i].exploredMap[pos[0]][pos[1]]=PRE_IDS["empty/explored"] #mark as explored aka 0.3
                                 else:
-                                    print("u have the wrong pos, fix it!")
+                                    #print("u have the wrong pos, fix it!")
                                     self.agents[agent_i].exploredMap[pos[0]][pos[1]]=PRE_IDS["empty/explored"] #mark as explored aka 0.3
                                     self.agents[agent_i].exploredMap[self.agents[agent_j].pos[0]][self.agents[agent_j].pos[1]]= agent_j + 1
                                 # TODO ALTERNATIVE CODE, NOT TESTED: 
                                 # if list(pos) == self.agents[agent_j].pos:
                                 #      print("alright")
                                 #      continue
-                                # else: #READ HEREEE! i think this else in the code above is impossible (aka having a wrong entry in the explored map of any agent), so instead of having to run self.is_pos_in_LOS_of before, which adds a little bit o run time, I want test without it and just remove the wrong entry -> this is just a  theory, so I will leave this version commented 
+                                # else: #READ HEREEE! i think this "else" in the code above is impossible (aka having a wrong entry in the explored map of any agent), so instead of having to run self.is_pos_in_LOS_of before, which adds a little bit o run time, I would like to test without it and just remove the wrong entry -> this is just a  theory, so I will leave this version commented 
                                 #     print("u have the wrong pos, fix it!")
                                 #     self.agents[agent_i].exploredMap[pos[0]][pos[1]]=PRE_IDS["empty/explored"] #mark as explored aka 0.3
                             else:
@@ -482,7 +452,7 @@ class IndoorExplorers(gym.Env):
                                 for pos in coord:
                                     #compare with the correct pos of agent_j and check that agent_j is still in LOS of agent_i
                                     if list(pos) == self.agents[agent_j].pos and self.is_pos_in_LOS_of(pos[0],pos[1],agent_i):
-                                        print("this is the right pos {}".format(pos))
+                                        #print("this is the right pos {}".format(pos))
                                         continue
                                     else:
                                         #mark the rest of the entries as explored  
@@ -493,7 +463,7 @@ class IndoorExplorers(gym.Env):
                             x,y = np.where(self.agents[agent_i].exploredMap==agent_j+1)    
                             coord = np.array(list(zip(x, y)))
                             for pos in coord:
-                                print("agent {} is gone".format(agent_j))
+                                #print("agent {} is gone".format(agent_j))
                                 self.agents[agent_i].exploredMap[pos[0]][pos[1]]=PRE_IDS["empty/explored"] #mark as explored aka 0.3
 
         # print("full_obs")
@@ -508,20 +478,16 @@ class IndoorExplorers(gym.Env):
 
         for agent_i in range(self.n_agents): 
             if self.agents[agent_i].is_alive() and (not self.agents[agent_i].done): #if agent_i is alive and isn't done
-                #print("LIDAR: is alive:{} ,agent {}, with pos{}".format(self.agents[agent_i].is_alive(), agent_i, self.agents[agent_i].pos))
                 self.ldr[agent_i].update(self.agents[agent_i].pos)
-                #thetas[agent_i], ranges[agent_i] = self.ldr[agent_i].thetas, self.ldr[agent_i].ranges
                 indexes[agent_i] = self.ldr[agent_i].idx
 
         self.lidarsIndexes = indexes
-
 
     #initialization of the map and every agent's position
     def __init_full_obs(self):
         #creates new map
         self.groundTruthMap = self.__create_grid()
         self._full_obs = np.full(self._grid_shape, PRE_IDS['unexplored'])
-        self.past_full_obs = np.full(self._grid_shape, PRE_IDS['unexplored'])
 
         self.create_lidars()
 
@@ -556,10 +522,8 @@ class IndoorExplorers(gym.Env):
         #create grid for later render
         self.__draw_base_img()
 
-
     #reset function
     def reset(self):
-        print("begin reset()")
         self._total_episode_reward = [0 for _ in range(self.n_agents)]
         self.reset_agents() 
         if self.conf["check_stuck"] and (self.conf["stuck_method"] == 2) :
@@ -571,8 +535,9 @@ class IndoorExplorers(gym.Env):
         #activa os lidars e dá update dos explored maps de cada um 
         #com base no que cada um consegue ver e na matrix de comms
         self.__init_full_obs()
-        print("reset-before merge")
-        printAgentsMaps(self.agents, self.n_agents)
+        print(self.comm_range)
+        #print("reset-before merge")
+        #printAgentsMaps(self.agents, self.n_agents)
         #print2Map(self.agents[0].exploredMap,self.n_agents,self.agents[1].exploredMap)
         if self.n_agents > 1:
             groups_in_range = []
@@ -581,16 +546,13 @@ class IndoorExplorers(gym.Env):
                 print("reset, groups in range: {}".format(groups_in_range))
             for group in groups_in_range:
                 if len(group)>1:
-                    print("reset-merge time!!")
                     self.merge_maps(group)
-        print("reset-after merge_maps")
-        printAgentsMaps(self.agents,self.n_agents)
+        #print("reset-after merge_maps")
+        #printAgentsMaps(self.agents,self.n_agents)
         #reset other vars
         self._step_count = 0
         self._steps_beyond_done = None
         
-        #save the initial state for future comparison
-        self.past_full_obs = self._full_obs.copy()
         if self.conf["viewer"]["print_prompts"]:
             print("reset done")
         return self.get_agents_obs()
@@ -621,15 +583,16 @@ class IndoorExplorers(gym.Env):
                     else: #once it gets to 50 pop the 1st/oldest elem and append the most recent one at the end
                         self.positions[idxs[i]].pop(0)
                         self.positions[idxs[i]].append(tuple(self.agents[idxs[i]].pos))
-                print("Start of agent {}{} action {}-{}{}".format(TEXT_AGENT_COLORS[idxs[i]], idxs[i], action_dict[idxs[i]],ACTION_MEANING[action_dict[idxs[i]]], TEXT_AGENT_COLORS[idxs[i]] ))
+                #print("Start of agent {}{} action {}-{}{}".format(TEXT_AGENT_COLORS[idxs[i]], idxs[i], action_dict[idxs[i]],ACTION_MEANING[action_dict[idxs[i]]], TEXT_AGENT_COLORS[idxs[i]] ))
                 self.__update_agent_pos(idxs[i], action_dict[idxs[i]])
-                print("After agent's {} action done:".format(idxs[i]))
+                #print("After agent's {} action done:".format(idxs[i]))
                 
                 #print("{}{} {}-{}{}".format(TEXT_AGENT_COLORS[idxs[i]], idxs[i], action_dict[idxs[i]],ACTION_MEANING[action_dict[idxs[i]]], TEXT_AGENT_COLORS[idxs[i]] ))
                 #print("{} {} {}".format(TEXT_AGENT_COLORS[idxs[i]],self.agents[idxs[i]].pos,TEXT_AGENT_COLORS[idxs[i]]))
-                print(Style.RESET_ALL)
-        print("step-before merge")
-        printAgentsMaps(self.agents, self.n_agents)
+                #print(Style.RESET_ALL)
+        #print("step-before merge")
+        #printAgentsMaps(self.agents, self.n_agents)
+
         #communicate maps
         #check if they are in comm range and then change info
         if self.n_agents > 1:
@@ -639,9 +602,8 @@ class IndoorExplorers(gym.Env):
                 print("after actions, groups in range: {}".format(groups_in_range))
             for group in groups_in_range:
                 if len(group)>1:
-                    print("merge time")
                     self.merge_maps(group)  
-        print("step - after merge")
+        #print("step - after merge")
         #check if agents are done and compute rewards
         for agent_i in range(self.n_agents):
             self._checkDone(agent_i)
@@ -652,6 +614,9 @@ class IndoorExplorers(gym.Env):
             #then end episode, set all dones to true
             for agent_i in range(self.n_agents):
                 self.agents[agent_i].done = True 
+                #if self.agents[agent_i].is_alive():
+                    #self._full_obs[self.agents[agent_i].pos[0]][self.agents[agent_i].pos[1]] = PRE_IDS['empty/explored'] #for correct rendering, does not affect calculation of reward
+                #fill_cell(self._base_img, self.agents[agent_i].pos, cell_size=CELL_SIZE, fill='white') #for correct redering
 
 
         # Check for episode overflow
@@ -682,10 +647,12 @@ class IndoorExplorers(gym.Env):
         #if max_steps has been reached end episode
         if (self._step_count >= self._max_steps): #and (not self.agents[agent_i].done):
             self.agents[agent_i].done = True
-            if self.agents[agent_i].is_alive():
+            #if self.agents[agent_i].is_alive():
                 #print(self.agents[agent_i].pos)
-                fill_cell(self._base_img, self.agents[agent_i].pos, cell_size=CELL_SIZE, fill='white')
+                #self._full_obs[self.agents[agent_i].pos[0]][self.agents[agent_i].pos[1]] = PRE_IDS['empty/explored'] #for correct rendering, does not affect calculation of reward
+            #fill_cell(self._base_img, self.agents[agent_i].pos, cell_size=CELL_SIZE, fill='white')
 
+        #Calculation of rewards:
         #check if any agent has explored the defined % of the map, if so task is complete, give extra reward and end episode (this last part is done after)
         if np.count_nonzero(self.agents[agent_i].exploredMap) > self.conf["percentage_explored"]*(self._grid_shape[0]*self._grid_shape[1]):
             if self.agents[agent_i].is_alive(): fill_cell(self._base_img, self.agents[agent_i].pos, cell_size=CELL_SIZE, fill='white')
@@ -741,9 +708,9 @@ class IndoorExplorers(gym.Env):
                     )
            
             
-            #print("new cells explored: {}".format((currentExploredCells-pastExploredCells)))
+            print("new cells explored: {}".format((currentExploredCells-pastExploredCells)))
             self.agents[agent_i].reward = self.conf["new_cell_disc_reward"]*(currentExploredCells - pastExploredCells) - self.movementCost
-            #print("agent reward:{}".format(self.agents[agent_i].reward))
+            print("agent reward:{}".format(self.agents[agent_i].reward))
 
     def render(self, mode='human'):
         assert (self._step_count is not None), \
@@ -761,11 +728,12 @@ class IndoorExplorers(gym.Env):
                 if self._full_obs[row][col] == PRE_IDS['wall']: #0.5: #walls
                     fill_cell(img,pos, cell_size=CELL_SIZE, fill=WALL_COLOR)
 
-        #render agents
+        #render lidar
         for agent_i in range(self.n_agents):
-            if not self.agents[agent_i].done:
-                #draw lidar fov
-                if self.conf["viewer"]["draw_lidar"] == True:
+            #if not self.agents[agent_i].done:
+            if self.agents[agent_i].is_alive():
+                #draw lidar fov (if the agent is done, then dont draw lidar fov -> to visually see that it is the end and lidars are turned off)
+                if self.conf["viewer"]["draw_lidar"] == True and (not self.agents[agent_i].done):
                     for neighbour in self.lidarsIndexes[agent_i]:
                         if not self._full_obs[neighbour[0]][neighbour[1]] == PRE_IDS['wall']:
                             fill_cell(img, neighbour, cell_size=CELL_SIZE, fill=AGENT_NEIGHBORHOOD_COLOR, margin=0.1)
@@ -773,9 +741,11 @@ class IndoorExplorers(gym.Env):
                 else:
                     fill_cell(img, self.agents[agent_i].pos, cell_size=CELL_SIZE, fill='white')
                 draw_cell_outline(img, self.agents[agent_i].pos, cell_size=CELL_SIZE, fill='black',width=1)
-            
+        
+        #render agents
         for agent_i in range(self.n_agents):
-            if not self.agents[agent_i].done:
+            #if not self.agents[agent_i].done:
+            if self.agents[agent_i].is_alive(): #always render agents, except when agents collide or are out of bounds
                 draw_circle(img, self.agents[agent_i].pos, cell_size=CELL_SIZE, fill=self.agents[agent_i].color)
                 write_cell_text(img, text=str(agent_i), pos=self.agents[agent_i].pos, cell_size=CELL_SIZE,
                                 fill='white', margin=0.4)  
@@ -792,7 +762,7 @@ class IndoorExplorers(gym.Env):
             #este print tem que ser depois de atualizar o viewer pq senão acontece aquele comportamento estranho em que o viewer parece estar atrasado
             #mas simplesmente não foi renderizado depois de ter os dados atualizados
             if self.conf["viewer"]["print_map"] == True:
-                print("render")
+                #print("render")
                 #printMap(self._full_obs, self.n_agents)
                 #print2Map(self.agents[0].exploredMap, 1, self.agents[0].pastExploredMap)
                 printAgentsMaps(self.agents, self.n_agents)
