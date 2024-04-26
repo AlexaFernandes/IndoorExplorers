@@ -62,10 +62,10 @@ DEFAULT_CONFIG={
     "viewer":{"width":22*30,
               "height":22*30,
               "title":"Indoor-Explorers-V01",
-              "drone_img":'/home/thedarkcurls/IndoorExplorers/img/drone.png',
-              "obstacle_img":'/home/thedarkcurls/IndoorExplorers/img/stone_black2.png',
-              "background_img":'/home/thedarkcurls/IndoorExplorers/img/wood_floor.jpg',
-              "light_mask":"/home/thedarkcurls/IndoorExplorers/img/light_350_hard.png",
+              "drone_img":'../IndoorExplorers/img/drone.png',
+              "obstacle_img":'../IndoorExplorers/img/stone_black2.png',
+              "background_img":'../IndoorExplorers/img/wood_floor.jpg',
+              "light_mask":"../IndoorExplorers/img/light_350_hard.png",
               "night_color":(20, 20, 20),
               "draw_lidar":True, #not used
               "draw_grid":True, #not used
