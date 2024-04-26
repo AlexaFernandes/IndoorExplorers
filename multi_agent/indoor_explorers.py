@@ -535,7 +535,7 @@ class IndoorExplorers(gym.Env):
         #activa os lidars e dá update dos explored maps de cada um 
         #com base no que cada um consegue ver e na matrix de comms
         self.__init_full_obs()
-        print(self.comm_range)
+        #print(self.comm_range)
         #print("reset-before merge")
         #printAgentsMaps(self.agents, self.n_agents)
         #print2Map(self.agents[0].exploredMap,self.n_agents,self.agents[1].exploredMap)
@@ -708,9 +708,9 @@ class IndoorExplorers(gym.Env):
                     )
            
             
-            print("new cells explored: {}".format((currentExploredCells-pastExploredCells)))
+            #print("new cells explored: {}".format((currentExploredCells-pastExploredCells)))
             self.agents[agent_i].reward = self.conf["new_cell_disc_reward"]*(currentExploredCells - pastExploredCells) - self.movementCost
-            print("agent reward:{}".format(self.agents[agent_i].reward))
+            #print("agent {} reward:{}".format(agent_i,self.agents[agent_i].reward))
 
     def render(self, mode='human'):
         assert (self._step_count is not None), \

@@ -3,9 +3,9 @@ DEFAULT_CONFIG={
     #  approach (centralized or not centralized)
     "approach": False,
     #  number of agents
-    "n_agents": 4,
+    "n_agents": 2,
     #  general configuration for the topology of operational area
-    "random_spawn": False, # if set to true, initial pos are ignored
+    "random_spawn": True, # if set to true, initial pos are ignored
     # if random_spawn is set to False, then this list of pos is used to spawn each agent correspondently:
     "initial": [ [0,0],
                  [0,15],
@@ -19,7 +19,7 @@ DEFAULT_CONFIG={
     # ======== ENVIROMENT =======
     # configuration regarding the random map generation
     # absolute number of obstacles, randomly placed in env
-    "obstacles":0,
+    "obstacles":5,
     # if rows/colums activated the obstacles will be placed in a semi random
     # spacing
     "number_rows":None,
@@ -52,7 +52,7 @@ DEFAULT_CONFIG={
     
 
     # ======== SENSORS | LIDAR =======
-    "lidar_range":1, #defines the LiDAR range
+    "lidar_range":3, #defines the LiDAR range
     "lidar_channels":32,
 
     # ======== COMMUNICATION =======
@@ -70,7 +70,7 @@ DEFAULT_CONFIG={
               "draw_lidar":True, #not used
               "draw_grid":True, #not used
               "draw_traceline":False, #not used
-              "print_map": True, #enables the visualization of the map of each agent individualy, when rendering is active
-              "print_prompts": True #enables the visualization of the map of each agent individualy, when rendering is active
+              "print_map": False, #enables the visualization of the map of each agent individualy, when rendering is active
+              "print_prompts": False #enables the visualization of the map of each agent individualy, when rendering is active
              }
 }

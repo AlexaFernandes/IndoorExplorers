@@ -12,9 +12,10 @@ plt.style.use(f"{plotstyle}")
 
 
 CASES = [
-        ["non-learning/for_merging/50000epi_IndoorExplorers16x16_1agents_movCost0.5_28102023051724.p","No stack frame", "Stuck 2" ],
-        ["non-learning/for_merging/50000epi_IndoorExplorers16x16_1agents_movCost0.5_07112023022259.p", "With stack frame", "No stuck" ],
-        ["non-learning/for_merging/50000epi_IndoorExplorers16x16_1agents_movCost0.5_07112023204151.p", "With stack frame", "Stuck 2" ]
+        ["/home/thedarkcurls/IndoorExplorers/learning/for_merging/50000epi_IndoorExplorers16x16_1agents_5obst_comm0.0_noStuck_14022024112434.p","1 agent","No "]# TODO
+        # ["non-learning/for_merging/50000epi_IndoorExplorers16x16_1agents_movCost0.5_28102023051724.p","No stack frame", "Stuck 2" ],
+        # ["non-learning/for_merging/50000epi_IndoorExplorers16x16_1agents_movCost0.5_07112023022259.p", "With stack frame", "No stuck" ],
+        # ["non-learning/for_merging/50000epi_IndoorExplorers16x16_1agents_movCost0.5_07112023204151.p", "With stack frame", "Stuck 2" ]
         #   ["non-learning/for_merging/50000epi_IndoorExplorers16x16_1agents_movCost0.5_28102023051724.p","1 agent", "No comms" ],          
         #   ["non-learning/for_merging/50000epi_IndoorExplorers16x16_2agents_movCost0.5_28102023233923.p","2 agents", "No comms" ],
         #   ["non-learning/for_merging/50000epi_IndoorExplorers16x16_2agents_movCost0.5_28102023195129.p","2 agents", "Comms range 1.0" ],

@@ -3,13 +3,12 @@
 from learning.dddqn import DDDQNAgent
 import pickle as p
 from learning.dddqn_utils import convert_frames, Now, get_latest_file 
-#from utils import install_roms_in_folder
 
 #define all the envs we want to test (dont forget to also register these env on multi_agent >>__init__.py )
 GAMES = []
 for game_info in [[(16, 16), 1],[(16, 16), 2],[(16, 16), 4],
                   [(21, 21), 1], [(21, 21), 2],[(21, 21), 4],
-                  [(200, 200), 1], [(200, 200), 2],[(200, 200), 4]]:  # [(grid_shape, predator_n, prey_n),..]
+                  [(200, 200), 1], [(200, 200), 2],[(200, 200), 4]]:  # [(grid_shape, n_agents),..]
     grid_shape, n_agents = game_info
     _game_name = 'IndoorExplorers{}x{}_{}'.format(grid_shape[0], grid_shape[1],n_agents)
     GAMES.append(_game_name)
@@ -21,9 +20,9 @@ if __name__ == '__main__':
     #install roms
     #install_roms_in_folder('roms/')
     data = []
-    game = 2 #SELECT WHICH GAME HERE!!
+    game = 1 #SELECT WHICH GAME HERE!!
     #grid_shape, n_agents = game_info
-    num_epi = 10000
+    num_epi = 50000
 
     #create agent
     dddqn = DDDQNAgent(GAMES[game], MOVES, epsilon_decay=0.99999, batch_size=32) #'IndoorExplorers'
@@ -31,12 +30,15 @@ if __name__ == '__main__':
     dddqn.q_target.summary()
     
     #train agent
-    exploration_rate = dddqn.run(num_episodes=num_epi, render=True, checkpoint=True, cp_interval=10, cp_render=True,  n_intelligent_agents = 1)
+    exploration_rate = dddqn.run(num_episodes=num_epi, render=False, checkpoint=True, cp_interval=500, cp_render=True,  n_intelligent_agents = 1)
     data.append(exploration_rate)
 
-    p.dump(data, open("{}epi_{}agents_movCost{}_{}.p".format(num_epi, GAMES[game], dddqn.env.conf["movementCost"], Now(separate=False)),"wb")) #GAMES[game][0][0], GAMES[game][0][1],GAMES[game][1]
-    
+    if dddqn.env.conf["check_stuck"]:
+        p.dump(data, open("{}epi_{}agents_{}obst_comm{}_stuck{}_{}.p".format(num_epi, GAMES[game], dddqn.env.conf["obstacles"], dddqn.env.conf["comm_range"], dddqn.env.conf["stuck_method"],Now(separate=False)),"wb")) #GAMES[game][0][0], GAMES[game][0][1],GAMES[game][1]
+    else:
+        p.dump(data, open("{}epi_{}agents_{}obst_comm{}_noStuck_{}.p".format(num_epi, GAMES[game], dddqn.env.conf["obstacles"], dddqn.env.conf["comm_range"], Now(separate=False)),"wb")) 
     #load model
+    #dddqn.load('/media/thedarkcurls/Seagate Expansion Drive/cenas_tese/models')
     dddqn.load('learning/models')# it is possible to specify: , 'DDDQN_1000_IndoorExplorers_09222023161252_QEval.h5', 'DDDQN_1000_IndoorExplorers_09222023161252_QTarget.h5') otherwise it will use the most recent ones
     
     #play game

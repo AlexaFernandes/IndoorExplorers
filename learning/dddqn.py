@@ -237,7 +237,7 @@ class DDDQNAgent(object):
     #If checkpoint is true then save model weights and log and evaluate the model and convert and save the frames
     #every cp_interval number of of episodes. The evaluation is rendered if cp_render is true.
 
-        #self.load('learning/models') #use the latest
+        self.load('learning/models') #use the latest
         #self.load('learning/models',"DDDQN_50000_IndoorExplorers16x16_1_movCost0.5_stuck2_07112023204150_QEval.h5","DDDQN_50000_IndoorExplorers16x16_1_movCost0.5_stuck2_07112023204150_QTarget.h5")
         printSTR = 'Episode: {}/{} | Score: {:.4f} | AVG 50: {:.4f} | Elapsed Time: {} mins'
         start_time = time()
@@ -302,12 +302,16 @@ class DDDQNAgent(object):
                 print('EVALUATION: {}'.format(round(eval_score, 4)))
                 self.log.append([e, score, np.average(scores[-50:]), elapsed_time, eval_score])
                 if self.env.conf["check_stuck"]:
-                    fileName = 'DDDQN_{}_{}_movCost{}_stuck{}_{}'.format(e, self.game,self.env.conf["movementCost"], self.env.conf["stuck_method"],Now(separate=False))
+                    fileName = 'DDDQN_{}_{}agents__{}obst_comm{}_stuck{}_{}'.format(e, self.game,self.env.conf["obstacles"], self.env.conf["comm_range"], self.env.conf["stuck_method"],Now(separate=False))
                 else:
-                    fileName = 'DDDQN_{}_{}_movCost{}_noStuck_{}'.format(e, self.game, self.env.conf["movementCost"], Now(separate=False))
+                    fileName = 'DDDQN_{}_{}agents__{}obst_comm{}_noStuck_{}'.format(e, self.game,self.env.conf["obstacles"], self.env.conf["comm_range"], Now(separate=False))
                 self.save('learning/models', fileName)
                 self.save_log('learning/logs', fileName)
                 convert_frames(frames, 'learning/renders', fileName, otype=otype)
+                #save in hardrive
+                # self.save('/media/thedarkcurls/Seagate Expansion Drive/cenas_tese/models', fileName)
+                # self.save_log('/media/thedarkcurls/Seagate Expansion Drive/cenas_tese/logs', fileName)
+                # convert_frames(frames, '/media/thedarkcurls/Seagate Expansion Drive/cenas_tese/renders', fileName, otype=otype)
             elif checkpoint:
                 self.log.append([e, score, np.average(scores[-50:]), elapsed_time, None]) 
         elapsed_time = round((time() - start_time)/60, 2)
@@ -363,10 +367,11 @@ class DDDQNAgent(object):
                 break
         if render_and_save:
             if self.env.conf["check_stuck"]:
-                fileName = 'DDDQN_PLAY_{}_movCost{}_stuck{}_{}'.format(self.game, self.env.conf["movementCost"], self.env.conf["stuck_method"], Now(separate=False))
+                fileName = 'DDDQN_PLAY_{}agents_{}obst_comm{}_stuck{}_{}'.format(self.game,self.env.conf["obstacles"], self.env.conf["comm_range"], self.env.conf["stuck_method"],Now(separate=False))
             else:
-                fileName = 'DDDQN_PLAY_{}_movCost{}_noStuck_{}'.format(self.game,self.env.conf["movementCost"], Now(separate=False))  
+                fileName = 'DDDQN_PLAY_{}agents_{}obst_comm{}_noStuck_{}'.format(self.game,self.env.conf["obstacles"], self.env.conf["comm_range"], Now(separate=False)) 
             convert_frames(frames, 'learning/renders', fileName, otype=otype)
+            #convert_frames(frames, '/media/thedarkcurls/Seagate Expansion Drive/cenas_tese/renders', fileName, otype=otype)
 
 
 ACTION_MEANING = {
